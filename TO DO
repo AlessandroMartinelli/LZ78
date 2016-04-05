@@ -1,0 +1,23 @@
+makefile
+getopt
+stat
+fstat
+
+
+poi si costruiscono le componenti una alla volta
+
+conviene cominciare con un programma piccolo che fa quasi nulla, giusto
+per vedere se compila
+
+poi si comincia ad aggiungere le cose semplici, ad es leggere 
+
+poi compressore che apre l-input e basta
+
+poi compressore che fa qualcosa di piu' etc, per controllare di aver fatto bene una cosa alla volta.
+
+Stessa cosa lato decompressore
+
+
+
+
+
