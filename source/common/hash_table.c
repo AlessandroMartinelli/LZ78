@@ -54,7 +54,7 @@ uint16_t hash(hash_table_t *hashtable, char c, uint16_t id) {
     return hashkey % hashtable->size;
 }
 
-list_t *lookup_string(hash_table_t *hashtable, char c, uint16_t id) {
+list_t *lookup_code(hash_table_t *hashtable, char c, uint16_t id) {
     list_t *list;
     uint16_t hashkey = hash(hashtable, c, id);
 
@@ -68,7 +68,7 @@ list_t *lookup_string(hash_table_t *hashtable, char c, uint16_t id) {
     return NULL;
 }
 
-int add_string(hash_table_t *hashtable, char c, uint16_t id, uint16_t new_node) {
+int add_code(hash_table_t *hashtable, char c, uint16_t id, uint16_t new_node) {
     list_t *new_list;
     list_t *current_list;
     uint16_t hashkey = hash(hashtable, c, id);
