@@ -35,16 +35,6 @@ uint16_t hash(hash_table_t *hashtable, char c, uint16_t id) {
     /* we start our hash out concateneting 2 times c */
     hashkey = c + (c << 8);
 
-    /* NO!
-     * for each character, we multiply the old hash by 31 and add the current
-     * character.  Remember that shifting a number left is equivalent to 
-     * multiplying it by 2 raised to the number of places shifted.  So we 
-     * are in effect multiplying hashkey by 32 and then subtracting hashkey.  
-     * Why do we do this?  Because shifting and subtraction are much more 
-     * efficient operations than multiplication.
-     */
-    //for (; *c != '\0'; c++) hashkey = *c + (hashkey << 5) - hashkey;
-    
     /* Do the XOR bit-by-bit between hashkey and id */
     hashkey ^= id;
 
@@ -79,7 +69,10 @@ int add_code(hash_table_t *hashtable, char c, uint16_t id, uint16_t new_node) {
     /* Does item already exist? */
     current_list = lookup_string(hashtable, c, id);
     /* item already exists, don't insert it again. */
-    if (current_list != NULL) return -1;
+    if (current_list != NULL){
+        free(new_list);
+        return -1;
+    }
     
     /* Add new node */
     new_list->character = c;

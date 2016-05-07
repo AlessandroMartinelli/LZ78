@@ -16,7 +16,7 @@ typedef struct _hash_table_t_ {
     list_t **table; /* the table elements */
 } hash_table_t;
 
-/* --- create_hash_table: intuitive
+/* --- create_hash_table: create the hash table and initialize all the elements
  * Parameter:
  * - (input)int: the size of the table
  * Returns(pointer to a struct hast_table_t)
