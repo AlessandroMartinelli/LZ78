@@ -1,19 +1,32 @@
-struct my_bitio;
+#include <stdint.h>
 
-int bitio_write(struct *bitio, uint size, uint64_t data);
-int bitio_read(struct *bitio, uint max_size, uint64_t* result);
+struct bitio{
+    FILE* f;
+    uint64_t data;
+    // --- writing index inside the buffer
+    uint wp;
+    // --- reading index inside the buffer
+    uint rp; 
+    uint mode;
+}
 
-//Questa funzioni potrebbero fare qualcosa di più di quello che dice il titolo,
-//ad esempio la close potrebbe fare anche la flush.
-struct bitio* bitio_open(name, mode);
-int bitio_close(struct bitio*);
+int bit_write(struct* bitio, uint size, uint64_t data);
+int bit_read(struct* bitio, uint max_size, uint64_t* result);
 
+// --- This functions could do more than what their name suggest,
+// --- e.g. close function could also perform a flush operation
+// --- mode 0 --> read, mode 1 --> write (Rizzo's word)
+struct bitio* bit_open(name, mode);
+int bit_close(struct bitio*);
 
-0 success
+/*
+ 0 success
 1,2,3... failure
 
 0 success
 -1 failure
 errono settata
+ */
+
 
 
