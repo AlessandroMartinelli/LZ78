@@ -1,32 +1,25 @@
-#include <stdint.h>
+/* TODO: substitute uint with the appropriate type.
+*  For example, mode can be represented with an uint8_t, since it only
+*  assume 2 values, 0 or 1.
+*  In bitio_write, we check the size must not be greater than 64; thus,
+*  we may use a uint8_t for that.
+*/
+
+#include <stdint.h> // for uintXX_t
+#include <stdlib.h>	// for calloc
+#include <stdio.h>  // for dealing with file: FILE, fwrite etc
+#include <errno.h>  // for using the variabile errno
+#include <string.h> // bzero
 
 struct bitio{
     FILE* f;
     uint64_t data;
-    // --- writing index inside the buffer
-    uint wp;
-    // --- reading index inside the buffer
-    uint rp; 
-    uint mode;
-}
+    uint wp; 	/* writing index inside the buffer */
+    uint rp; 	/* reading index inside the buffer */
+    uint mode;  /* 0 means reading, 1 means writing */
+};
 
-int bit_write(struct* bitio, uint size, uint64_t data);
-int bit_read(struct* bitio, uint max_size, uint64_t* result);
-
-// --- This functions could do more than what their name suggest,
-// --- e.g. close function could also perform a flush operation
-// --- mode 0 --> read, mode 1 --> write (Rizzo's word)
-struct bitio* bit_open(name, mode);
-int bit_close(struct bitio*);
-
-/*
- 0 success
-1,2,3... failure
-
-0 success
--1 failure
-errono settata
- */
-
-
-
+int bitio_write(struct bitio*, uint size, uint64_t data);
+int bitio_read(struct bitio*, uint max_size, uint64_t* result);
+struct bitio* bitio_open(const char* name, uint mode);
+int bitio_close(struct bitio*);
