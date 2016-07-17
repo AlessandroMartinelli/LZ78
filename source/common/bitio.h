@@ -2,7 +2,7 @@
 *  For example, mode can be represented with an uint8_t, since it only
 *  assume 2 values, 0 or 1.
 *  In bitio_write, we check the size must not be greater than 64; thus,
-*  we may use a uint8_t for that.
+*  we may use a uint8_t for size.
 */
 
 #include <stdint.h> // for uintXX_t
@@ -21,5 +21,5 @@ struct bitio{
 
 int bitio_write(struct bitio*, uint size, uint64_t data);
 int bitio_read(struct bitio*, uint max_size, uint64_t* result);
-struct bitio* bitio_open(const char* name, uint mode);
+struct bitio* bitio_open(const char* filename, uint mode);
 int bitio_close(struct bitio*);

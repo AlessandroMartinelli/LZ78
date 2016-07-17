@@ -1,21 +1,24 @@
-/* TODO: define the errno variabile;
-*  If the open return an error, how to set errno? in the paper, we have
+/* TODO: If the open return an error, how to set errno? in the paper, we have
 *  ENDFILE, but there is no such macros. There are ENFILE and EMFILE.
-*  Alessandro: propongo di rinominare space in "avail" e size in "need"
+*  Alessandro: I propose renaming space --> "avail" and size --> "need"
 */
 
 #include "bitio.h"
 
-// ------------------ //
-//     BITIO_OPEN     //
-// ------------------ //
+/* BITIO_OPEN
+*  It tries to allocate space for a struct bitio, then open a file and
+*  assigns its descriptor to the FILE pointer within struct bitio.
+*  After, it sets the "mode" value inside struct bitio accordingly to the
+*  argument passed by the caller. Finally, it returns the created struct bitio
+*/
 struct bitio* bitio_open(const char* name, uint mode){
     struct bitio* b;
     if (name == NULL || name[0] == '\0' || mode > 1){
         errno = EINVAL; 
         return NULL;
     }
-    b = calloc(1, sizeof(struct bitio)); /* returns a properly aligned object */
+    /* calloc: returns a properly aligned object */
+    b = calloc(1, sizeof(struct bitio)); 
     if (b == NULL){
         errno = ENOMEM;
         return NULL;
@@ -37,18 +40,25 @@ struct bitio* bitio_open(const char* name, uint mode){
     return b;
 }
 
-// ------------------- //
-//     BITIO_CLOSE     //
-// ------------------- //
+/* BITIO_CLOSE
+*  If in write mode, it flushes the buffer content on file. 
+*  Finally, it closes the file, deallocate the struct bitio and set to
+*  zero the corresponding memory.
+*/
 int bitio_close(struct bitio* b){
     int ret = 0;
     if (b == NULL){
         errno = EINVAL;
         return -1;
     }
-    /* TODO: the return value is not so simple (see man) */
+    
     if(b->mode == 1 && b-> wp > 0){
-        if(fwrite((void*)&b->data,(b->wp+7)/8, 1, b->f)){ //TODO: the "1" was added by Ale in order to have the program to compile
+    // TODO: the return value is not so simple (see man)
+    // TODO: the "1" was added by Ale in order to have the program to compile
+    /* If e.g there is still 1 bit to write, it writes 1 byte; if there are
+    *  9 bit to write, it writes 2 bytes. And so on.
+    */
+        if(fwrite((void*)&b->data, (b->wp+7)/8, 1, b->f)){ 
             ret = -1;
         }
     }
@@ -61,9 +71,11 @@ int bitio_close(struct bitio* b){
     return ret;
 }
 
-// ------------------- //
-//     BITIO_WRITE     //
-// ------------------- //
+/* BITIO_WRITE
+*  Copy "size" (up to 64) bit from data to b->data. If there is not enough space,
+*  write as much as you can, flush the buffer to b->f and then
+*  write the remaining part.
+*/
 int bitio_write(struct bitio* b, uint size, uint64_t data){
     int space;
     if(b == NULL || b->mode !=1 || size > 64){
@@ -84,22 +96,28 @@ int bitio_write(struct bitio* b, uint size, uint64_t data){
 		*/
 		data &= (1UL << size)-1;	
         b->data |= data << b->wp;
-        if(fwrite(&(b->data), 1, 8, b->f)!=1){ // TODO: check: 8 itemes of 1 bytes?
+        if(fwrite(&(b->data), 8, 1, b->f)!=1){
 			/* It is not possible to recover from a write error, therefore
 			*  the caller must close the program in this case 
 			*/
             errno = ENOSPC;
             return -1;
         }
-        b->data = data >> space; /* unsigned integer shift --> fill with zeroes */
+        /* copy the remaining part of data in b->data and fill with 0 the first 
+        *  part of b->data; finally, advance wp of the number of bit written
+        *  this second time 
+        */
+        b->data = data >> space; 
         b->wp = size - space;
     }
     return 0; // success!
 }
 
-// ------------------ //
-//     BITIO_READ     //
-// ------------------ //
+/* BITIO_READ
+*  It copies up to size bits from struct_bitio->data into data.
+*  If struct_bitio->data doesn't contain enough data, it tries to
+*  read some bits from the file referred to by struct_bitio->f
+*/
 int bitio_read(struct bitio* b, uint size, uint64_t* data){
     int space; 
     if(b == NULL || b->mode != 0 || size > 64){
@@ -112,27 +130,31 @@ int bitio_read(struct bitio* b, uint size, uint64_t* data){
 		return 0;
     }
     if (size <= space){
-    	/* There is enough space for storing the "size" bytes passed as argument.
-    	*  We put in *data "size" bytes taken from [wp, rp], starting from rp 
+    	/* There are enough bits to be consumed.
+    	*  We put in data "size" bits taken from [wp, rp], starting from rp 
     	*/
         *data = ((b->data >> b->rp) & (1UL << size)-1);
         b->rp+=size;
     } else {
         /* The called would like to read more bytes than the buffer can offer,
-        *  so we put into "data" all the available data; after that, since
+        *  so we put into data all the available data; after that, since
         *  the buffer is now empty, we have to fill it again. We may read
         *  up to 8 items, each one 1 bytes long.
         */
         *data = (b->data >> b->rp);
-        uint ret = fread(&(b->data), 1, 8, b->f); //TODO: I'm sure there is a better way for &(b->data) 
+        uint ret = fread(&(b->data), 1, 8, b->f);
     	if (ret < 0){
         	errno = ENODATA;
         	return -1;
     	}
-		b->wp = ret * 8; /* fread returns the number of object read*/
+    	/* fread returns the number of object read, so in order to obtain
+    	*  the number of bits we have read, we have to multiply for the object
+    	*  size, which is 8 bits. 
+    	*/
+		b->wp = ret * 8; 
 		if(b->wp >= size-space){
-			/* I have to read in the data also the remaining ones
-			*  once reloaded from the file
+			/* I have to copy in data also the remaining ones,
+			*  once they have been reloaded from the file
 			*/
 		    *data |= b->data << space;
 		    *data &= (1UL << size)-1;
