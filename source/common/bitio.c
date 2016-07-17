@@ -91,11 +91,10 @@ int bitio_write(struct bitio* b, uint size, uint64_t data){
         b->data |= data << b->wp;	/* copy the data to the buffer */
         b->wp += size;
     } else {
-		/* the buffer fills, so we have to full the buffer, flush,
-		*  and then rewrite the remaining bytes.
+		/* the buffer fills, so we have to full the buffer, flush on file,
+		*  and finally write the remaining bytes.
 		*/
-		data &= (1UL << size)-1;	
-        b->data |= data << b->wp;
+        b->data |= (data & (1UL << space)-1) << b->wp;
         if(fwrite(&(b->data), 8, 1, b->f)!=1){
 			/* It is not possible to recover from a write error, therefore
 			*  the caller must close the program in this case 
@@ -107,6 +106,7 @@ int bitio_write(struct bitio* b, uint size, uint64_t data){
         *  part of b->data; finally, advance wp of the number of bit written
         *  this second time 
         */
+        data &= (1UL << size)-1;	
         b->data = data >> space; 
         b->wp = size - space;
     }
@@ -153,19 +153,24 @@ int bitio_read(struct bitio* b, uint size, uint64_t* data){
     	*/
 		b->wp = ret * 8; 
 		if(b->wp >= size-space){
-			/* I have to copy in data also the remaining ones,
-			*  once they have been reloaded from the file
+			/* The number of bits extracted from the file is greater or 
+			*  equal to the number of bit missing for satisfying the
+			*  caller request. This means there are enought bits for
+			*  satisfying the caller request.
 			*/
 		    *data |= b->data << space;
 		    *data &= (1UL << size)-1;
-		    b -> rp = size-space;
+		    b->rp = size-space;
 		    return size;
 		} else {
-			/* If the file is going to end, then size bytes cannot be read */
+			/* Even extracting from the file, there were not enough bits for 
+			*  satisfying the caller request
+			*/
 		    *data |= b->data << space;
-		    *data &= 1UL<<(b->wp + space)-1;
+		    *data &= (1UL<<(b->wp + space))-1;
 		    b->rp = b->wp;
 		    return b->wp + space;
+
 		}
 	}
 }
