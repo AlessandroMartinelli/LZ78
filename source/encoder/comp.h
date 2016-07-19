@@ -1,3 +1,5 @@
+#include <string.h>
+#include <math.h>
 #include "../common/bitio.h"
 #include "../common/util.h"
 #include "hash_table.h"

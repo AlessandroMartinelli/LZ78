@@ -2,21 +2,14 @@
 
 int comp(const char *filename_in, const char *filename_out, uint32_t dictionary_size){
 	struct bitio *b_out, *b_in;
-	uint16_t next_id = 1;
-	uint16_t parent_id = 0;
-	int res;
-	char aux_char;
 	uint32_t aux_32;
 	uint64_t aux_64;
+	char aux_char;
 	list_t *node;
-	
-	/*
-	if(check_ext(filename_out, "lz78") || check_ext(filename_in, "txt")){
-		errno = EINVAL;
-		return -1;
-	}
-	*/
-	printf("comp1\n");
+	int res;
+	uint16_t next_id = 1;
+	uint16_t parent_id = 0;
+	uint16_t id_size = (uint16_t) ceil(log(dictionary_size)); /* log base 2 */
 	
 	b_out = bitio_open(filename_out, WRITE);
 	b_in = bitio_open(filename_in, READ);
@@ -24,15 +17,12 @@ int comp(const char *filename_in, const char *filename_out, uint32_t dictionary_
 	
 	//( ---create the header of b_out
 	aux_32 = MAGIC;
-	memcpy(&aux_64, &aux_32, sizeof(uint32_t));
-	bitio_write(b_out, sizeof(uint32_t)*8, aux_64);
+	bitio_write(b_out, sizeof(uint32_t)*8, (uint64_t) aux_32);
 	
-	memcpy(&aux_64, &dictionary_size, sizeof(uint32_t));
-	bitio_write(b_out, sizeof(uint32_t)*8, aux_64);
+	bitio_write(b_out, sizeof(uint32_t)*8, (uint64_t) dictionary_size);
 	
-	aux_32 = 8/*bits (character)*/ + 8/* XXX bits (parent_index)*/;
-	memcpy(&aux_64, &aux_32, sizeof(uint64_t));
-	bitio_write(b_out, sizeof(uint32_t)*8, aux_64);
+	static uint8_t symbol_size = 8; /*bits (character)*/
+	bitio_write(b_out, sizeof(uint32_t)*8, (uint64_t) symbol_size);
 	
 	memcpy(&aux_64, filename_in, strlen(filename_in));
 	bitio_write(b_out, sizeof(uint32_t)*8, aux_64);
@@ -54,10 +44,8 @@ int comp(const char *filename_in, const char *filename_out, uint32_t dictionary_
 			add_code(t, aux_char, parent_id, next_id++);
 			LOG(DEBUG,"emit code #%d: <\"%c\", %d>", next_id-1, aux_char, parent_id);
 			
-			bzero(&aux_64, sizeof(uint64_t));
-			memcpy(&aux_64, &aux_c, sizeof(char));
-			bitio_write(b_out, sizeof(char)*8, aux_64); /* emit character */
-			bitio_write(b_out, 8/*XXX*/, parent_id); /* emit parent_id */
+			bitio_write(b_out, symbol_size, (uint64_t) aux_char); /* emit character */
+			bitio_write(b_out, id_size/*XXX*/, parent_id); /* emit parent_id */
 			
 			parent_id = 0;
 			
@@ -76,10 +64,8 @@ int comp(const char *filename_in, const char *filename_out, uint32_t dictionary_
 	/* just to be sure it will emits all the characters? */
 	if(node != NULL){
 		LOG(INFO,"<\"%c\", %d>", node->character, node->parent_id);
-		bzero(&aux_64, sizeof(uint64_t));
-		memcpy(&aux_64, &aux_c, sizeof(char));
-		bitio_write(b_out, sizeof(char)*8, aux_64); /* emit character */
-		bitio_write(b_out, 8/*XXX*/, parent_id); /* emit parent_id */
+		bitio_write(b_out, symbol_size, (uint64_t) aux_char); /* emit character */
+		bitio_write(b_out, id_size/*XXX*/, parent_id); /* emit parent_id */
 	}
 	
 	free_table(t);
