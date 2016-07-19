@@ -11,15 +11,17 @@
 #include <errno.h>  // for using the variabile errno
 #include <string.h> // bzero
 
+enum mode_t {READ, WRITE};
+
 struct bitio{
     FILE* f;
     uint64_t data;
-    uint wp; 	/* writing index inside the buffer */
-    uint rp; 	/* reading index inside the buffer */
-    uint mode;  /* 0 means reading, 1 means writing */
+    uint8_t wp; 	/* writing index inside the buffer */
+    uint8_t rp; 	/* reading index inside the buffer */
+    mode_t mode;
 };
 
-int bitio_write(struct bitio*, uint size, uint64_t data);
-int bitio_read(struct bitio*, uint max_size, uint64_t* result);
-struct bitio* bitio_open(const char* filename, uint mode);
+int bitio_write(struct bitio*, uint8_t size, uint64_t data);
+int bitio_read(struct bitio*, uint8_t max_size, uint64_t* result);
+struct bitio* bitio_open(const char* filename, mode_t mode);
 int bitio_close(struct bitio*);
