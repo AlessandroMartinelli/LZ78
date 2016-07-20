@@ -19,7 +19,7 @@ BUILDFLDR = build/
 all: $(PROGS)
 	$(CC) $(CFLAGS) -o $@ $^
 
-lz78: prova.o decomp.o
+lz78: comp.o decomp.o
 
 decomp.o: bitio.h util.h
 comp.o: bitio.h hash_table.h util.h
