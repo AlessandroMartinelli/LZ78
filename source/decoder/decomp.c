@@ -1,12 +1,12 @@
-/* decomp.c
+/* outomp.c
  * 
  * Description----------------------------------------------------------
- * Definition of the behaviors of the decompressor.
- * Implementation of the methods declared in "decoder_dictionary.h".
+ * Definition of the behaviors of the outompressor.
+ * Implementation of the methods outlared in "outoder_dictionary.h".
  * ---------------------------------------------------------------------
  */
 
-#include "decomp.h"
+#include "outomp.h"
 
 const char *get_filename_ext(const char *filename) {
 	const char *dot = strrchr(filename, '.');
@@ -22,46 +22,68 @@ int check_ext(const char *filename, const char *ext){
 	return 1;
 }
 
-void decode(code_t *array, code_t node, struct bitio* b){
+void decode(code_t *array, code_t node, struct bitio* b, uint8_t symbol_size){
 	if(node.parent_id!=0){
-		decode(array, array[node.parent_id - 1], b);
+		decode(array, array[node.parent_id - 1], b, symbol_size);
 	}
-	bitio_write(b, sizeof(char)*8, node.character); /* emit character */
+	bitio_write(b, symbol_size, node.character); /* emit character */
 	return;
 }
 
-int decomp(const char *filename_enc, const char *filename_dec){
-	struct bitio *b_enc, *b_dec;
-	uint64_t aux;
+int decomp(const char *filename_in, const char *filename_out){
+	struct bitio *b_in, *b_out;
+	char aux_char;
+	uint64_t aux_64;
+	uint32_t aux_32;
+	uint32_t dictionary_size;
 	
-	if(check_ext(filename_enc, "lz78") || check_ext(filename_dec, "txt")){
-		errno = EINVAL;
-		return -1;
-	}
+	b_in = bitio_open(filename_in, READ);
+	b_out = bitio_open(filename_out, WRITE);
+	if(b_in == NULL || b_out == NULL) return -1;
 	
-	b_enc = bitio_open(filename_enc, READ);
-	b_dec = bitio_open(filename_dec, WRITE);
-	if(b_enc == NULL || b_dec == NULL) return -1;
+	//( ---read the header of b_in
+	bitio_read(b_in, sizeof(uint32_t)*8, aux_64);
+	if(aux_64 != MAGIC) return -1; /* not an lz78 compressed file */
 	
-	fseek(b_enc->f, 0L, SEEK_END);
-	uint size = ftell(b_enc->f);
-	fseek(b_enc->f, 0L, SEEK_SET);
-	size /= sizeof(code_t); /* normalize the number of array elements*/
-	printf("size: %d\n",size);
+	bitio_read(b_in, sizeof(uint32_t)*8, dictionary_size);
+	uint16_t id_size = (uint16_t) ceil(log(dictionary_size)); /* log base 2 */
+	
+	static uint8_t symbol_size = 8; /*bits (character)*/
+	bitio_read(b_in, sizeof(uint32_t)*8, symbol_size);
+	
+	bitio_read(b_in, sizeof(uint64_t)*8, aux_64);
+	if(strcmp(&aux_64, filename_out)!=0)
+		/* not the initial name... and so... well... it's fine */;
+	//---)
+	
+	/* get the number of codes */
+	fseek(b_in->f, 0L, SEEK_END);
+	uint size = ftell(b_in->f);
+	fseek(b_in->f, 0L, SEEK_SET);
+	size -= 3*32;                    /* neglete header size */
+	size /= symbol_size+id_size;     /* normalize the number of array elements
+	                                  * by the code dimension*/
+	/* the dictionary is clean every dictionary_size codes */
+	if(size >= dictionary_size)
+		size = dictionary_size;
+	LOG(INFO,"size: %d\n",size);
 	
 	code_t nodes[size];
 	
 	for(int i=0; i<size; i++){
-		if(bitio_read(b_enc, sizeof(code_t)*8, &aux) == sizeof(code_t)*8){
-			memcpy(&nodes[i], &aux, sizeof(code_t));
-			printf("<\"%c\", %d>\n", nodes[i].character, nodes[i].parent_id);
-			decode(nodes, (code_t) nodes[i], b_dec);
+		if(bitio_read(b_in, id_size, &aux_64) == id_size &&
+			bitio_read(b_in, symbol_size, &aux_char) == symbol_size){
+			nodes[i].character = (char) aux_char;
+			nodes[i].parent_id = aux_64;
+			LOG(INFO, "<\"%c\", %d>\n", nodes[i].character, nodes[i].parent_id);
+			decode(nodes, nodes[i], b_out, symbol_size);
 		}
-		else
+		else{
 			return -1;
+		}
 	}
 	
-	bitio_close(b_enc);
-	bitio_close(b_dec);
+	bitio_close(b_in);
+	bitio_close(b_out);
 	return 0;
 }
