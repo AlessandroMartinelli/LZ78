@@ -25,3 +25,4 @@ int bitio_write(struct bitio*, uint8_t size, uint64_t data);
 int bitio_read(struct bitio*, uint8_t max_size, uint64_t* result);
 struct bitio* bitio_open(const char* filename, mode_t mode);
 int bitio_close(struct bitio*);
+FILE* bitio_get_file(struct bitio*);
