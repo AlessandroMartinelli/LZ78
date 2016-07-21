@@ -8,6 +8,8 @@
 #define ANSI_COLOR_YELLOW	"\x1b[33m"
 #define ANSI_COLOR_GREY		"\x1b[37m"
 
+#define MAGIC 3
+
 enum log_type {ERROR, WARNING, INFO, DEBUG};
 
 extern uint8_t __verbose;
@@ -44,14 +46,3 @@ do {															\
 		fprintf(stderr, ANSI_COLOR_RESET);							\
 		}															\
 }while(0)
-
-
-/*	
-struct _header_t{
-	uint32_t magic_num;
-	uint32_t dictionary_size;
-	uint32_t symbol_size;
-	char filename[256];
-} header_t;	
-*/	
-   
