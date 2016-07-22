@@ -10,6 +10,8 @@
 #include <unistd.h>		// for getopt, access
 #include <stdint.h>		//for uintXX_t
 #include "common/util.h"
+#include "common/bitio.h"
+#include "common/header.h"
 #include "encoder/comp.h"
 #include "decoder/decomp.h"
 

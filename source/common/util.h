@@ -1,7 +1,8 @@
-#include <sys/time.h>	//timeval
-#include <stdio.h>		//fprintf, stderr
-#include <stdint.h>		//for uintXX_t
-#include <string.h>		//for str_cpy
+#include <sys/time.h>		//timeval
+#include <stdio.h>			//fprintf, stderr
+#include <stdint.h>			//for uintXX_t
+#include <string.h>			//for str_cpy
+#include <openssl/md5.h>	//checksum
 
 #define ANSI_COLOR_RED		"\x1b[31m"
 #define ANSI_COLOR_RESET	"\x1b[0m"
@@ -44,3 +45,6 @@ uint8_t __verbose;
 			fprintf(stderr, ANSI_COLOR_RESET);							\
 			}															\
 	}while(0)
+	
+void csum(FILE *f, unsigned char *c);
+

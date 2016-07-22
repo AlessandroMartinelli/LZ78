@@ -2,12 +2,11 @@
 #include <string.h>
 #include <stdint.h>		//for uintXX_t
 #include <stdlib.h>
-#include <openssl/md5.h>
 
 struct header_t{
 	long int original_size;
 	char *filename;	
-	char *checksum;
+	unsigned char *checksum;
 	uint32_t magic_num;
 	uint32_t dictionary_size;
 	uint8_t symbol_size;

@@ -1,32 +1,18 @@
 #include "comp.h"
 
-void csum(FILE *f, unsigned char *c){
-	int i;
-	MD5_CTX mdContext;
-	int bytes;
-	unsigned char data[1024];
+#define ROLLBACK()									\
+	if(t!=NULL) free_table(t);						\
+	if(b_in != NULL) bitio_close(b_in);			\
+	if(b_out != NULL) bitio_close(b_out);
+	
 
-	if (f == NULL) {
-		LOG(ERROR,"Error in file opening");
-		return -1;
-	}
-
-	MD5_Init(&mdContext);
-	while((bytes = fread (data, 1, 1024, f)) != 0)
-		MD5_Update(&mdContext, data, bytes);
-	MD5_Final(c, &mdContext);
-	LOG(DEBUG, "File checksum:");
-	for(i = 0; i < MD5_DIGEST_LENGTH; i++) LOG(DEBUG,"%02x", c[i]);
-	fseek(f, 0L, SEEK_SET); /* go back to the start of the file */
-}
-
-int comp(const char *filename_in, const char *filename_out, uint32_t dictionary_size, uint8_t symbol_size){
+int comp(char *filename_in, char *filename_out, uint32_t dictionary_size, uint8_t symbol_size){
 	struct bitio *b_out, *b_in;
-	uint32_t aux_32;
 	uint64_t aux_64;
 	char aux_char;
 	list_t *node;
 	int res;
+	struct stat *buf = NULL;
 	uint16_t next_id = 1;
 	uint16_t parent_id = 0;
 	uint16_t id_size = (uint16_t) ceil(log(dictionary_size)); /* log base 2 */
@@ -38,22 +24,23 @@ int comp(const char *filename_in, const char *filename_out, uint32_t dictionary_
 	b_in = bitio_open(filename_in, READ);
 	if(b_out == NULL || b_in == NULL){
 		LOG(ERROR, "Invalid file");
+		ROLLBACK();
 		return -1;
 	}
 	
 	//( ---create the header of b_out
 	FILE *f = bitio_get_file(b_out);
-	struct stat *buf;
-	fstat(f,buf);			/* compute statistics (original_size) */
+	fstat(fileno(f), buf);			/* compute statistics (original_size) */
 	csum(f, checksum);	/* compute checksum */
-	header_t h = { buf->st_size,		/* original_size */
+	struct header_t h = { buf->st_size,		/* original_size */
 						filename_in, 		/* filename */
 						checksum,			/* checksum */
-						MAGIC,				/* magic number */
+						(uint32_t) MAGIC,				/* magic number */
 						dictionary_size,	/* dictionary_size */
 						symbol_size};		/* symbol_size */
-	if(!header_write(h, t)){
+	if(!header_write(&h, f)){
 		LOG(ERROR, "Header write gone wrong");
+		ROLLBACK();
 		return -1;
 	}
 	//---)
@@ -65,7 +52,7 @@ int comp(const char *filename_in, const char *filename_out, uint32_t dictionary_
 	while(sizeof(char)*8 == (res = bitio_read(b_in, sizeof(char)*8, &aux_64))){
 	/* untill characters are available */
 		aux_char = (char) aux_64;
-		LOG(DEBUG,"read %d bits (char=%c)\",res, aux_char);
+		LOG(DEBUG, "read %d bits (char=%c)",res, aux_char);
 		node = lookup_code(t, aux_char, parent_id);
 		if(node == NULL){ /* node not found */
 		
@@ -98,9 +85,6 @@ int comp(const char *filename_in, const char *filename_out, uint32_t dictionary_
 	}
 	LOG(INFO,"Compression terminated");
 	
-	free_table(t);
-	
-	bitio_close(b_out);
-	bitio_close(b_in);
+	ROLLBACK();
 	return 0;
 }

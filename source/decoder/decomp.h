@@ -8,19 +8,18 @@
  * ---------------------------------------------------------------------
  * 
  */
+#include <sys/stat.h>		/* stat */
+#include <unistd.h>			/* stat */
 #include <string.h>
 #include <math.h>
-#include "../common/bitio.h"
-#include "../common/util.h"
-#include "../common/header.h"
+//#include "../common/bitio.h"
+//#include "../common/util.h"
+//#include "../common/header.h"
 
 typedef struct _code_t_ {
     char character;
     uint64_t parent_id;
 } code_t;
 
-const char *get_filename_ext(const char *filename);
-int check_ext(const char *filename, const char *ext);
-
-void decode(code_t *array, code_t node, struct bitio* b);
+void decode(code_t *array, code_t node, struct bitio* b, uint8_t symbol_size);
 int decomp(const char *filename_enc, const char *filename_dec);
