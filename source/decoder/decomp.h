@@ -12,9 +12,9 @@
 #include <unistd.h>			/* stat */
 #include <string.h>
 #include <math.h>
-//#include "../common/bitio.h"
-//#include "../common/util.h"
-//#include "../common/header.h"
+#include "../common/bitio.h"
+#include "../common/util.h"
+#include "../common/header.h"
 
 typedef struct _code_t_ {
     char character;

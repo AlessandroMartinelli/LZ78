@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef struct _list_t_ {
     /*key: <parent node id, character>*/

@@ -1,16 +1,13 @@
 #include "hash_table.h"
 
-hash_table_t *my_hash_table;
-int size_of_table = 12;
-my_hash_table = create_hash_table(size_of_table);
-
 hash_table_t *create_hash_table(int size) {
     hash_table_t *new_table;
+	int i;
 
     if (size < 1) return NULL; /* invalid size for table */
 
     /* Attempt to allocate memory for the table structure */
-    if ((new_table = malloc(sizeof(hash_value_t))) == NULL) {
+    if ((new_table = malloc(sizeof(hash_table_t))) == NULL) {
         return NULL;
     }
 
@@ -67,7 +64,7 @@ int add_code(hash_table_t *hashtable, char c, uint16_t id, uint16_t new_node) {
     if ((new_list = malloc(sizeof (list_t))) == NULL) return 1;
 
     /* Does item already exist? */
-    current_list = lookup_string(hashtable, c, id);
+    current_list = lookup_code(hashtable, c, id);
     /* item already exists, don't insert it again. */
     if (current_list != NULL){
         free(new_list);

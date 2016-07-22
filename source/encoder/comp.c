@@ -1,13 +1,14 @@
 #include "comp.h"
 
-#define ROLLBACK()									\
+#define COMP_CLEAN()									\
 	if(t!=NULL) free_table(t);						\
 	if(b_in != NULL) bitio_close(b_in);			\
 	if(b_out != NULL) bitio_close(b_out);
 	
 
 int comp(char *filename_in, char *filename_out, uint32_t dictionary_size, uint8_t symbol_size){
-	struct bitio *b_out, *b_in;
+	struct bitio *b_out = NULL, *b_in = NULL;
+	hash_table_t *t = NULL;
 	uint64_t aux_64;
 	char aux_char;
 	list_t *node;
@@ -24,7 +25,7 @@ int comp(char *filename_in, char *filename_out, uint32_t dictionary_size, uint8_
 	b_in = bitio_open(filename_in, READ);
 	if(b_out == NULL || b_in == NULL){
 		LOG(ERROR, "Invalid file");
-		ROLLBACK();
+		COMP_CLEAN();
 		return -1;
 	}
 	
@@ -40,13 +41,12 @@ int comp(char *filename_in, char *filename_out, uint32_t dictionary_size, uint8_
 						symbol_size};		/* symbol_size */
 	if(!header_write(&h, f)){
 		LOG(ERROR, "Header write gone wrong");
-		ROLLBACK();
+		COMP_CLEAN();
 		return -1;
 	}
 	//---)
 	
-	/* declaration of the hash table (tree abstractoion)*/
-	hash_table_t *t;
+	/* initialization of the hash table (tree abstractoion)*/
 	t = create_hash_table(dictionary_size); //??
 	
 	while(sizeof(char)*8 == (res = bitio_read(b_in, sizeof(char)*8, &aux_64))){
@@ -85,6 +85,6 @@ int comp(char *filename_in, char *filename_out, uint32_t dictionary_size, uint8_
 	}
 	LOG(INFO,"Compression terminated");
 	
-	ROLLBACK();
+	COMP_CLEAN();
 	return 0;
 }

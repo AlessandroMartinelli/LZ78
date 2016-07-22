@@ -25,14 +25,14 @@ all: $(PROGS)
 	test -d $(BUILDFLDR) || mkdir $(BUILDFLDR)
 	mv -t $(BUILDFLDR) $(CLEANFILES)
 
-lz78: source/lz78.o
+lz78: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-source/lz78.o: source/encoder/comp.o source/decoder/decomp.o
-source/decoder/decomp.o: 	source/common/bitio.h source/common/util.h \
-									source/common/header.h
-source/encoder/comp.o: 	source/common/bitio.h source/encoder/hash_table.h \
-								source/common/util.h source/common/header.h
+source/lz78.o:	$(CFLDR)util.h $(EFLDR)comp.h $(DFLDR)decomp.h
+source/decoder/decomp.o: 	$(CFLDR)bitio.h $(CFLDR)util.h \
+									$(CFLDR)header.h
+source/encoder/comp.o: 	$(CFLDR)bitio.h $(EFLDR)hash_table.h \
+								$(CFLDR)util.h $(CFLDR)header.h
 
 .PHONY: clean
 clean:

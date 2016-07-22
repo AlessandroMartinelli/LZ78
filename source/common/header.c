@@ -27,7 +27,7 @@ int header_read(struct header_t *h, FILE *f){
 	//allocates a single block of memory shared among filename and checksum
 	buf = (char*)malloc(MD5_DIGEST_LENGTH + filename_size);
 	h->filename = buf;
-	h->checksum = buf + filename_size;
+	h->checksum = (unsigned char*)(buf + filename_size);
 	ret = fscanf(f,"%s%ld",		
 		h->filename, &(h->original_size));
 	if(ret<=0){

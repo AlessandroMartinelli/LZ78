@@ -1,3 +1,6 @@
+#ifndef _UTIL_H
+#define _UTIL_H
+
 #include <sys/time.h>		//timeval
 #include <stdio.h>			//fprintf, stderr
 #include <stdint.h>			//for uintXX_t
@@ -37,9 +40,7 @@ uint8_t __verbose;
 					strcpy(prefix, "debug");						\
 					break;											\
 			}														\
-			struct timeval _t0;										\
-			gettimeofday(&_t0, NULL);								\
-			fprintf(stdout, "[%s: %s, %d] %s: " _fmt "\n",	\
+			fprintf(stdout, "[%s: %s, %d] %s: " _fmt "\n",			\
 				__FILE__, __FUNCTION__, __LINE__, prefix,				\
 				##__VA_ARGS__);											\
 			fprintf(stderr, ANSI_COLOR_RESET);							\
@@ -47,4 +48,6 @@ uint8_t __verbose;
 	}while(0)
 	
 void csum(FILE *f, unsigned char *c);
+
+#endif
 

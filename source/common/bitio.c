@@ -39,7 +39,7 @@ struct bitio* bitio_open(const char *name, mode_t mode){
 	 */
 	b->f = fopen(name, (mode == READ)? "r" : "w");
 	if (b->f == NULL){
-		errno = EACCESS; // it used to be ENDFILE
+		errno = ENOENT;
 		free(b);
 		return NULL;
 	}
@@ -49,7 +49,7 @@ struct bitio* bitio_open(const char *name, mode_t mode){
 }
 
 int bitio_close(struct bitio* b){
-	uint8_t ret = 0;
+	int ret = 0;
 	if (b == NULL){
 		errno = EINVAL;
 		return -1;
@@ -83,7 +83,7 @@ int bitio_write(struct bitio *b, uint8_t size, uint64_t data){
 		/* the buffer fills, so we have to full the buffer, flush on file,
 		*  and finally write the remaining bytes.
 		*/
-		b->data |= (data & (1UL << space)-1) << b->wp;
+		b->data |= (data & ((1UL << space)-1)) << b->wp;
 		if(fwrite(&(b->data), 8, 1, b->f)!=1){
 			/* It is not possible to recover from a write error, therefore
 			*  the caller must close the program in this case 
@@ -117,7 +117,7 @@ int bitio_read(struct bitio* b, uint8_t size, uint64_t* data){
 		/* There are enough bits to be consumed.
 		*  We put in data "size" bits taken from [wp, rp], starting from rp 
 		*/
-		*data = ((b->data >> b->rp) & (1UL << size)-1);
+		*data = ((b->data >> b->rp) & ((1UL << size)-1));
 		b->rp+=size;
 		return size;
 	} else {
@@ -127,7 +127,7 @@ int bitio_read(struct bitio* b, uint8_t size, uint64_t* data){
 		*  up to 8 items, each one 1 bytes long.
 		*/
 		*data = (b->data >> b->rp) & ((1UL << space)-1);
-		uint8_t ret = fread(&(b->data), 1, 8, b->f);
+		int ret = fread(&(b->data), 1, 8, b->f);
 		if (ret < 0){
 			errno = ENODATA;
 			return -1;

@@ -10,14 +10,12 @@
 #include <stdint.h>		//for uintXX_t
 #include <errno.h>		// for using the variabile errno
 #include "common/util.h"
-#include "common/bitio.h"
-#include "common/header.h"
 #include "encoder/comp.h"
 #include "decoder/decomp.h"
 
 #define DICTIONARY_DEFAULT_SIZE 65536 /* TODO: adjust this value */
-#define DICTIONARY_MIN_SIZE 4096 /* TODO: adjust this value */
-#define DICTIONARY_MAX_SIZE 4294967295 /* TODO: check this value (2^32 -1)*/
+#define DICTIONARY_MIN_SIZE 4096LL /* TODO: adjust this value */
+#define DICTIONARY_MAX_SIZE 4294967295LL /* TODO: check this value (2^32 -1)*/
 #define SYMBOL_SIZE 8
 
 void usage(){
@@ -51,7 +49,7 @@ int main (int argc, char **argv){
 	char *dictionary_size_str = NULL;
 	opterr = 0; /* 0: getopt doesn't print error messages*/	
 	int c = 0;
-	char missing_argument_option;
+	char missing_mandatory_argument;
 	
 	while ((c = getopt (argc, argv, "-d -v -h -l: -i: -o:")) != -1){
 		LOG(DEBUG, "c: %c, optarg: %s, optind: %d", c, optarg, optind);
@@ -80,7 +78,7 @@ int main (int argc, char **argv){
 			case '?':
 				if (optopt == 'l' || optopt == 'i' || optopt == 'o'){
 					mma_flag = 1;
-					missing_argument_option = optopt;
+					missing_mandatory_argument = optopt;
 				}
 				else{ 
 					iu_flag = 1;
@@ -98,6 +96,10 @@ int main (int argc, char **argv){
 			"Try 'lz78 -h' for more information", missing_argument_option);		
 		return 1;
 	}
+	if (h_flag == 1){
+		usage();
+		return 0;
+	}
 	if (i_flag == 0){
 		LOG(INFO, "Missing input file. Try 'lz78 -h' for more information");
 		return 1;
@@ -107,10 +109,6 @@ int main (int argc, char **argv){
 			return 1;
 		} 	
 	}
-	if (h_flag == 1){
-		usage();
-		return 0;
-	}
 	if (v_flag == 1){
 		__verbose = 1;
 	}
@@ -118,7 +116,7 @@ int main (int argc, char **argv){
 		aux = strtol(dictionary_size_str, NULL, 10);
 		if (aux < DICTIONARY_MIN_SIZE || aux > DICTIONARY_MAX_SIZE){
 			LOG(INFO, "wrong dictionary length. It must be between "
-				"%d and %ld", DICTIONARY_MIN_SIZE, DICTIONARY_MAX_SIZE);
+				"%lld and %lld", DICTIONARY_MIN_SIZE, DICTIONARY_MAX_SIZE);
 			return 1;
 		}
 		dictionary_size = aux;		
@@ -139,11 +137,12 @@ int main (int argc, char **argv){
 		 (o_flag == 1)? output_file_name : "");
 		 
 	LOG(INFO, "Starting...");
-	if (dflag == 0){
+	if (d_flag == 0){
 		comp(input_file_name, output_file_name, dictionary_size, SYMBOL_SIZE);
 	} else {
 		decomp(input_file_name, output_file_name);
 	}
+	return 0;
 }
 	
 

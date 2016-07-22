@@ -5,6 +5,9 @@
 *  we may use a uint8_t for size.
 */
 
+#ifndef _BITIO_H
+#define _BITIO_H
+
 #include <stdint.h> // for uintXX_t
 #include <stdlib.h>	// for calloc
 #include <stdio.h>  // for dealing with file: FILE, fwrite etc
@@ -64,8 +67,4 @@ int bitio_read(struct bitio*, uint8_t max_size, uint64_t* result);
  */
 FILE* bitio_get_file(struct bitio*);
 
-
-
-
-
-
+#endif

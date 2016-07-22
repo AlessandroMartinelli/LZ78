@@ -8,7 +8,7 @@ void csum(FILE *f, unsigned char *c){
 
 	if (f == NULL) {
 		LOG(ERROR,"Error in file opening");
-		return -1;
+		return;
 	}
 
 	MD5_Init(&mdContext);

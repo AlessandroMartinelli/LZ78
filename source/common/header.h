@@ -1,7 +1,11 @@
+#ifndef _HEADER_H
+#define _HEADER_H
+
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>		//for uintXX_t
 #include <stdlib.h>
+#include <openssl/md5.h>
 
 struct header_t{
 	long int original_size;
@@ -26,3 +30,5 @@ int header_read(struct header_t *h, FILE *f);
  * It frees the memory allocated for containing filename and checksum
  */
 void header_free(struct header_t *h);
+
+#endif

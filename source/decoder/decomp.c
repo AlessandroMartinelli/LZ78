@@ -8,7 +8,7 @@
 
 #include "decomp.h"
 
-#define ROLLBACK()									\
+#define DECOMP_CLEAN()									\
 	if(h != NULL) header_free(h);					\
 	if(b_in != NULL) bitio_close(b_in);			\
 	if(b_out != NULL) bitio_close(b_out);
@@ -23,7 +23,7 @@ void decode(code_t *array, code_t node, struct bitio* b, uint8_t symbol_size){
 }
 
 int decomp(const char *filename_in, const char *filename_out){
-	struct bitio *b_in, *b_out;
+	struct bitio *b_in = NULL, *b_out = NULL;
 	char aux_char;
 	uint32_t size;
 	uint64_t num_of_codes, f_curr;
@@ -31,6 +31,7 @@ int decomp(const char *filename_in, const char *filename_out){
 	uint32_t dictionary_size;
 	uint8_t symbol_size;
 	uint16_t id_size;
+	uint64_t i;
 	unsigned char checksum[MD5_DIGEST_LENGTH];
 	uint8_t checksum_match = 1;
 	struct header_t *h = NULL;
@@ -38,13 +39,13 @@ int decomp(const char *filename_in, const char *filename_out){
 	
 	if(filename_in == NULL){
 		LOG(ERROR,"Input filename missing");
-		ROLLBACK();
+		DECOMP_CLEAN();
 		return -1;
 	}
 	b_in = bitio_open(filename_in, READ);
 	if(b_in == NULL){
 		LOG(ERROR, "Input file impossible to be open");
-		ROLLBACK();
+		DECOMP_CLEAN();
 		return -1;
 	}
 	
@@ -52,12 +53,12 @@ int decomp(const char *filename_in, const char *filename_out){
 	FILE *f = bitio_get_file(b_in);
 	if(header_read(h, f) != 0){
 		LOG(ERROR, "Header read gone wrong");
-		ROLLBACK();
+		DECOMP_CLEAN();
 		return -1;
 	}
 	if(h->magic_num != MAGIC){
 		LOG(ERROR,"Wrong decompression/wrong file");
-		ROLLBACK();
+		DECOMP_CLEAN();
 		return -1;
 	}
 	dictionary_size = h->dictionary_size;
@@ -68,7 +69,7 @@ int decomp(const char *filename_in, const char *filename_out){
 	b_out = bitio_open(filename_out==NULL ? h->filename : filename_out, WRITE);
 	if(b_out == NULL){
 		LOG(ERROR, "Output file impossible to be open");
-		ROLLBACK();
+		DECOMP_CLEAN();
 		return -1;
 	}
 	
@@ -85,17 +86,17 @@ int decomp(const char *filename_in, const char *filename_out){
 	
 	code_t nodes[size];
 	
-	for(uint64_t i=0; i<num_of_codes; i++){
+	for(i=0; i<num_of_codes; i++){
 		if(bitio_read(b_in, id_size, &aux_64) == id_size &&
 			bitio_read(b_in, symbol_size, (uint64_t*) &aux_char) == symbol_size){
 			nodes[i%size].character = (char) aux_char;
 			nodes[i%size].parent_id = aux_64;
-			LOG(INFO, "<\"%c\", %lu>\n", nodes[i%size].character, nodes[i%size].parent_id);
+			LOG(INFO, "<\"%c\", %llu>\n", nodes[i%size].character, nodes[i%size].parent_id);
 			decode(nodes, nodes[i%size], b_out, symbol_size);
 		}
 		else{
 			LOG(ERROR,"Code unreadable");
-		ROLLBACK();
+		DECOMP_CLEAN();
 		return -1;
 		}
 		/*clean of the dictionary not needed*/
@@ -104,7 +105,7 @@ int decomp(const char *filename_in, const char *filename_out){
 	/* compare headers */
 	FILE* f_out = bitio_get_file(b_out);
 	csum(f_out, checksum);
-	for(int i=0; i<MD5_DIGEST_LENGTH; i++){
+	for(i=0; i<MD5_DIGEST_LENGTH; i++){
 		if(checksum[i] == h->checksum[i]) continue;
 		LOG(WARNING, "Checksum error");
 		checksum_match = 0;
@@ -115,6 +116,6 @@ int decomp(const char *filename_in, const char *filename_out){
 		if(buf->st_size != h->original_size)
 			LOG(WARNING,"Original size error");
 	}
-	ROLLBACK();
+	DECOMP_CLEAN();
 	return 0;
 }
