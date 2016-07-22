@@ -7,13 +7,26 @@
 #include <ctype.h>		// for isprint
 //#include <stdio.h>
 #include <stdlib.h>		// for strtol
-#include <unistd.h>		// for getopt
+#include <unistd.h>		// for getopt, access
 #include <stdint.h>		//for uintXX_t
 #include "common/util.h"
+#include "encoder/comp.h"
+#include "decoder/decomp.h"
 
 #define DICTIONARY_DEFAULT_SIZE 65536 /* TODO: adjust this value */
 #define DICTIONARY_MIN_SIZE 4096 /* TODO: adjust this value */
 #define DICTIONARY_MAX_SIZE 4294967295 /* TODO: check this value (2^32 -1)*/
+#define SYMBOL_SIZE 8
+
+#define ROLLBACK()									\
+	if (input_file_name != NULL){					\
+		free(input_file_name);						\
+		LOG(DEBUG, "input_file_name deallocated");	\
+	}												\
+	if (output_file_name != NULL){					\
+		free(output_file_name);						\
+		LOG(DEBUG, "output_file_name deallocated");	\
+	}
 
 void usage(){
 	LOG(INFO, "\nUsage: lz78 [OPTION]... [ARGUMENT]...\n"
@@ -40,6 +53,7 @@ int safe_filename_cpy(char **file_name, char *optarg){
 		LOG(ERROR, "memory allocation failed");
 		return -1;
 	}
+	
 	strcpy(*file_name, optarg);
 	LOG(DEBUG, "safe_strcpy of %s successfully executed", *file_name);
 	return 0;
@@ -83,6 +97,7 @@ int main (int argc, char **argv){
 				if (aux < DICTIONARY_MIN_SIZE || aux > DICTIONARY_MAX_SIZE){
 					LOG(INFO, "wrong dictionary length. It must be between "
 						"%d and %ld", DICTIONARY_MIN_SIZE, DICTIONARY_MAX_SIZE);
+					ROLLBACK();
 					return 1;
 				}
 				dictionary_size = aux;
@@ -91,33 +106,43 @@ int main (int argc, char **argv){
 				iflag = 1;
 				if ((ret = safe_filename_cpy(&input_file_name, optarg)) != 0){
 					LOG(INFO, "Error parsing input filename");
+					ROLLBACK();
 					return ret;
 				}
+				if( access(input_file_name, F_OK ) == -1 ) {
+					LOG(INFO, "file %s doesn't exists", input_file_name);
+					ROLLBACK();
+					return 1;
+					} 		
 				break;
 			case 'o':
 				oflag = 1;
 				if ((ret = safe_filename_cpy(&output_file_name, optarg)) != 0){
 					LOG(INFO, "Error parsing output filename");
+					ROLLBACK();
 					return ret;
 				}
 				break;
 			case '?':
 				if (optopt == 'l' || optopt == 'i' || optopt == 'o')
 					LOG(INFO, "Option -%c requires an argument. "
-					"Try '-h' for more information", optopt);
+					"Try 'lz78 -h' for more information", optopt);
 				else if (isprint (optopt))
 					LOG(INFO, "Unknown option '-%c'. "
-					"Try '-h' for more information", optopt);				
+					"Try 'lz78-h' for more information", optopt);				
 				else
 					LOG(INFO, "Unknown option character '\\x%x'"
-					"Try '-h' for more information", optopt);					
+					"Try 'lz78-h' for more information", optopt);
+				ROLLBACK();					
 				return 1;
 			default:
+				ROLLBACK();
 				return 1;
 		}
 	}
 	if (iflag == 0){
-		LOG(INFO, "Missing input file. Try '-h' for more information");
+		LOG(INFO, "Missing input file. Try 'lz78 -h' for more information");
+		ROLLBACK();
 		return 1;
 	}
 	if (lflag == 0){
@@ -135,10 +160,10 @@ int main (int argc, char **argv){
 			 (__verbose == 1)? "on" : "off", input_file_name, 
 			 (oflag == 1)? "\nOutput file name = " : "",
 			 (oflag == 1)? output_file_name : "");
-	 
+			 
 	LOG(INFO, "Starting...");
 	if (dflag == 0){
-		comp(input_file_name, output_file_name, dictionary_size);
+		comp(input_file_name, output_file_name, dictionary_size, SYMBOL_SIZE);
 	} else {
 		decomp(input_file_name, output_file_name);
 	}
