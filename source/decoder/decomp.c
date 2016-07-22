@@ -33,35 +33,48 @@ void decode(code_t *array, code_t node, struct bitio* b, uint8_t symbol_size){
 int decomp(const char *filename_in, const char *filename_out){
 	struct bitio *b_in, *b_out;
 	char aux_char;
-	uint size, num_of_codes;
+	uint size, num_of_codes, f_curr;
 	uint64_t aux_64;
 	uint32_t aux_32;
 	uint32_t dictionary_size;
+	uint8_t symbol_size;
+	uint16_t id_size;
+	unsigned char checksum[MD5_DIGEST_LENGTH];
+	bool match = true;
 	
 	b_in = bitio_open(filename_in, READ);
-	b_out = bitio_open(filename_out, WRITE);
-	if(b_in == NULL || b_out == NULL) return -1;
+	if(b_in == NULL){
+		LOG(ERROR, "Input file impossible to be open");
+		return -1;
+	}
 	
 	//( ---read the header of b_in
-	bitio_read(b_in, sizeof(uint32_t)*8, aux_64);
-	if(aux_64 != MAGIC) return -1; /* not an lz78 compressed file */
-	
-	bitio_read(b_in, sizeof(uint32_t)*8, dictionary_size);
-	uint16_t id_size = (uint16_t) ceil(log(dictionary_size)); /* log base 2 */
-	
-	static uint8_t symbol_size = 8; /*bits (character)*/
-	bitio_read(b_in, sizeof(uint32_t)*8, symbol_size);
-	
-	bitio_read(b_in, sizeof(uint64_t)*8, aux_64);
-	if(strcmp(&aux_64, filename_out)!=0)
-		/* not the initial name... and so... well... it's fine */;
+	FILE *f = bitio_get_file(b_in);
+	header_t *h;
+	if(header_read(h, f) != 0){
+		LOG(ERROR, "Header read gone wrong");
+		return -1;
+	}
+	if(h->magic_num != MAGIC){
+		LOG(ERROR,"Wrong decompression/wrong file");
+		return -1;
+	}
+	dictionary_size = h->dictionary_size;
+	id_size = (uint16_t) ceil(log(dictionary_size)); /* log base 2 */
+	symbol_size = h->symbol_size;
 	//---)
 	
+	b_out = bitio_open(filename_out==NULL ? h->filename : filename_out, WRITE);
+	if(b_out == NULL){
+		LOG(ERROR, "Output file impossible to be open");
+		return -1;
+	}
+	
 	/* get the number of codes */
-	fseek(b_in->f, 0L, SEEK_END);
-	num_of_codes = ftell(b_in->f);
-	fseek(b_in->f, 0L, SEEK_SET);
-	num_of_codes -= 3*32;                    /* neglete header size */
+	f_curr = ftell(f);
+	fseek(f, 0L, SEEK_END);
+	num_of_codes = ftell(f) - f_curr;
+	fseek(f, 0L, f_curr);
 	num_of_codes /= symbol_size+id_size;     /* normalize the number of array
 													      * elements by the code dimension*/
 	/* the dictionary is clean every dictionary_size codes */
@@ -79,10 +92,30 @@ int decomp(const char *filename_in, const char *filename_out){
 			decode(nodes, nodes[i%size], b_out, symbol_size);
 		}
 		else{
-			return -1
+			LOG(ERROR,"Code unreadable");
+			goto 
 		}
 		/*clean of the dictionary not needed*/
 	}
+	
+	/* compare headers */
+	FILE* f_out = bitio_get_file(b_out);
+	csum(f_out, checksum);
+	for(int i=0; i<MD5_DIGEST_LENGTH; i++){
+		if(checksum[i] == h->checksum[i]) continue;
+		LOG(WARNING, "Checksum error");
+		match = false;
+		break;
+	}
+	if(match){
+		struct stat *buf;
+		fstat(f_out,buf);
+		if(buf->st_size != h->original_size){
+			LOG(WARNING,"Original size error");
+	}
+	
+	
+	header_free(h);
 	
 	bitio_close(b_in);
 	bitio_close(b_out);
