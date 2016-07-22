@@ -13,10 +13,19 @@
 #include "encoder/comp.h"
 #include "decoder/decomp.h"
 
-#define DICTIONARY_DEFAULT_SIZE 65536 /* TODO: adjust this value */
-#define DICTIONARY_MIN_SIZE 4096LL /* TODO: adjust this value */
-#define DICTIONARY_MAX_SIZE 4294967295LL /* TODO: check this value (2^32 -1)*/
+#define DICTIONARY_DEFAULT_LEN 65536 /* TODO: adjust this value */
+#define DICTIONARY_MIN_LEN 4096LL /* TODO: adjust this value */
+#define DICTIONARY_MAX_LEN 4294967295LL /* TODO: check this value (2^32 -1)*/
 #define SYMBOL_SIZE 8
+
+#define DECOMP_F	0x80	/* decompression flag */	
+#define VERB_F		0x40	/* verbose flag */	
+#define HELP_F		0x20	/* help flag */
+#define DIC_LEN_F	0x10	/* length of dictionary given flag */
+#define INPUT_F		0x08	/* input file name given flag */
+#define OUTPUT_F	0x04	/* output file name given flag */
+#define MMA_F		0x02	/* incorrect usage flag */
+#define IU_F		0x01	/* missing mandatory argument flag */
 
 void usage(){
 	LOG(INFO, "\nUsage: lz78 [OPTION]... [ARGUMENT]...\n"
@@ -34,111 +43,101 @@ void usage(){
 int main (int argc, char **argv){
 	extern uint8_t __verbose;
 	__verbose = 0;
-	uint8_t d_flag = 0;		/* decompression flag */	
-	uint8_t v_flag = 0;		/* verbose flag */	
-	uint8_t h_flag = 0;		/* help flag */
-	uint8_t l_flag = 0;		/* length of dictionary given flag */
-	uint8_t i_flag = 0;		/* input file name given flag */
-	uint8_t o_flag = 0;		/* output file name given flag */
-	uint8_t iu_flag = 0;	/* incorrect usage flag */
-	uint8_t mma_flag = 0;	/* missing mandatory argument flag */
+	uint8_t flag = 0;
 	int64_t aux = 0;	
-	uint32_t dictionary_size = 0;
+	uint32_t dictionary_len = 0;
 	char *input_file_name = NULL;
 	char *output_file_name = NULL;
-	char *dictionary_size_str = NULL;
+	char *dictionary_len_str = NULL;
 	opterr = 0; /* 0: getopt doesn't print error messages*/	
 	int c = 0;
 	char missing_mandatory_argument;
 	
 	while ((c = getopt (argc, argv, "-d -v -h -l: -i: -o:")) != -1){
-		LOG(DEBUG, "c: %c, optarg: %s, optind: %d", c, optarg, optind);
 		switch (c){
 			case 'd':
-				d_flag = 1;
+				flag |= DECOMP_F;
 				break;
 			case 'v':
-				v_flag = 1;
+				flag |= VERB_F;
 				break;
 			case 'h':
-				h_flag = 1;
+				flag |= HELP_F;
 				break;
 			case 'l':
-				l_flag = 1;
-				dictionary_size_str = optarg;
+				flag |= DIC_LEN_F;
+				dictionary_len_str = optarg;
 				break;
 			case 'i':
-				i_flag = 1;
+				flag |= INPUT_F;
 				input_file_name = optarg;	
 				break;
 			case 'o':
-				o_flag = 1;
+				flag |= OUTPUT_F;
 				output_file_name = optarg;
 				break;
 			case '?':
 				if (optopt == 'l' || optopt == 'i' || optopt == 'o'){
-					mma_flag = 1;
+					flag |= MMA_F;
 					missing_mandatory_argument = optopt;
 				}
-				else{ 
-					iu_flag = 1;
-				}
+				/* break omitted intentionally */
 			default:
-				iu_flag = 1;
+				flag |= IU_F;
 		}
 	}
-	if (iu_flag == 1){
+	if ((flag & IU_F) != 0){
 		LOG(INFO, "Incorrect usage. Try 'lz78 -h' for more information");
 		return 1;
 	}
-	if (mma_flag == 1){
-		LOG(INFO, "Option -%c requires an argument. "
-			"Try 'lz78 -h' for more information", missing_argument_option);		
-		return 1;
-	}
-	if (h_flag == 1){
+	if (flag == HELP_F){
 		usage();
 		return 0;
+	}	
+	if ((flag & MMA_F) != 0){
+		LOG(INFO, "Option -%c requires an argument. "
+			"Try 'lz78 -h' for more information", missing_mandatory_argument);		
+		return 1;
 	}
-	if (i_flag == 0){
+	if ((flag & INPUT_F) == 0){
 		LOG(INFO, "Missing input file. Try 'lz78 -h' for more information");
 		return 1;
 	} else {
 		if (access(input_file_name, F_OK ) == -1 ) {
 			LOG(INFO, "file %s doesn't exists", input_file_name);
 			return 1;
-		} 	
+		} 
 	}
-	if (v_flag == 1){
+	if ((flag & VERB_F) != 0){
 		__verbose = 1;
 	}
-	if (l_flag == 1){
-		aux = strtol(dictionary_size_str, NULL, 10);
-		if (aux < DICTIONARY_MIN_SIZE || aux > DICTIONARY_MAX_SIZE){
+	if ((flag & DIC_LEN_F) != 0){
+		aux = strtol(dictionary_len_str, NULL, 10);
+		if (aux < DICTIONARY_MIN_LEN || aux > DICTIONARY_MAX_LEN){
 			LOG(INFO, "wrong dictionary length. It must be between "
-				"%lld and %lld", DICTIONARY_MIN_SIZE, DICTIONARY_MAX_SIZE);
+				"%lld and %lld", DICTIONARY_MIN_LEN, DICTIONARY_MAX_LEN);
 			return 1;
 		}
-		dictionary_size = aux;		
+		dictionary_len = aux;		
 	} else {
-		dictionary_size = DICTIONARY_DEFAULT_SIZE;
+		dictionary_len = DICTIONARY_DEFAULT_LEN;
 	}
 	
 	LOG(INFO, "The following parameter have been choosen:\n"
 		"Compression mode = %s\n"
-		"Dictionary size  = %d %s\n"
+		"Dictionary len   = %d %s\n"
 		"Verbose mode     = %s\n"
 		"Input file name  = %s"
 		"%s%s",
-		 (d_flag == 0)? "compression" : "decompression", 
-		 dictionary_size, (l_flag ==0)? "(default)" : "",
-		 (__verbose == 1)? "on" : "off", input_file_name, 
-		 (o_flag == 1)? "\nOutput file name = " : "",
-		 (o_flag == 1)? output_file_name : "");
+		 ((flag & DECOMP_F) == 0)? "compression" : "decompression", 
+		 dictionary_len, ((flag & DIC_LEN_F) == 0)? "(default)" : "",
+		 ((flag & VERB_F) != 0)? "on" : "off", input_file_name, 
+		 ((flag & OUTPUT_F) != 0)? "\nOutput file name = " : "",
+		 ((flag & OUTPUT_F) != 0)? output_file_name : "");
 		 
 	LOG(INFO, "Starting...");
-	if (d_flag == 0){
-		comp(input_file_name, output_file_name, dictionary_size, SYMBOL_SIZE);
+	if ((flag & DECOMP_F) != 0){
+		comp(input_file_name, output_file_name, dictionary_len, SYMBOL_SIZE);
 	} else {
 		decomp(input_file_name, output_file_name);
 	}
