@@ -1,14 +1,11 @@
 /* TODO: If the open return an error, how to set errno? in the paper, we have
  *  ENDFILE, but there is no such macros. There are ENFILE and EMFILE.
- *  Alessandro: I propose renaming space --> "avail" and size --> "need"
+ * Alessandro: I propose renaming space --> "avail" and size --> "need"
+ * Usually 0 indicates success, while -1 error. 
  */
 
 #include "bitio.h"
 
-/* BITIO_FLUSH
- *  If the file was opened in write mode, it perform a flush of
- *  the bitio buffer on the file related to the bitio structure.
- */
 int bitio_flush(struct bitio *b){
 	if(b->mode == WRITE && b-> wp > 0){
 	/* If e.g there is still 1 bit to write, it writes 1 byte; if there are
@@ -19,15 +16,9 @@ int bitio_flush(struct bitio *b){
 			return -1;
 		}
 	}
-	return 1;
+	return 0; // success
 }
 
-/* BITIO_OPEN
- *  It tries to allocate space for a struct bitio, then open a file and
- *  assigns its descriptor to the FILE pointer within struct bitio.
- *  After, it sets the "mode" value inside struct bitio accordingly to the
- *  argument passed by the caller. Finally, it returns the created struct bitio
- */
 struct bitio* bitio_open(const char *name, mode_t mode){
 	struct bitio *b;
 	if (name == NULL || name[0] == '\0' || mode > WRITE){
@@ -48,7 +39,7 @@ struct bitio* bitio_open(const char *name, mode_t mode){
 	 */
 	b->f = fopen(name, (mode == READ)? "r" : "w");
 	if (b->f == NULL){
-		errno = ENFILE;
+		errno = EACCESS; // it used to be ENDFILE
 		free(b);
 		return NULL;
 	}
@@ -57,11 +48,6 @@ struct bitio* bitio_open(const char *name, mode_t mode){
 	return b;
 }
 
-/* BITIO_CLOSE
-*  If in write mode, it flushes the buffer content on file. 
-*  Finally, it closes the file, deallocate the struct bitio and set to
-*  zero the corresponding memory.
-*/
 int bitio_close(struct bitio* b){
 	uint8_t ret = 0;
 	if (b == NULL){
@@ -79,11 +65,6 @@ int bitio_close(struct bitio* b){
 	return ret;
 }
 
-/* BITIO_WRITE
-*  Copy "size" (up to 64) bit from data to b->data. If there is not enough space,
-*  write as much as you can, flush the buffer to b->f and then
-*  write the remaining part.
-*/
 int bitio_write(struct bitio *b, uint8_t size, uint64_t data){
 	uint8_t space;
 	if(b == NULL || b->mode !=WRITE || size > 64){
@@ -121,11 +102,6 @@ int bitio_write(struct bitio *b, uint8_t size, uint64_t data){
 	return 0; // success!
 }
 
-/* BITIO_READ
-*  It copies up to size bits from struct_bitio->data into data.
-*  If struct_bitio->data doesn't contain enough data, it tries to
-*  read some bits from the file referred to by struct_bitio->f
-*/
 int bitio_read(struct bitio* b, uint8_t size, uint64_t* data){
 	uint8_t space; 
 	if(b == NULL || b->mode != READ || size > 64){
@@ -184,18 +160,15 @@ int bitio_read(struct bitio* b, uint8_t size, uint64_t* data){
 	}
 }
 
-/* BITIO_GET_FILE
- *  This function is used when you want to write to a file
- *  already opened with bitio_open without causing inconsistences.
- *  It flush the bitio_write buffer to file, and then returns 
- *  the pointer to the file, positioned where bitio_write left it.
- */
 FILE* bitio_get_file(struct bitio *b){
 	if (b == NULL){
 		errno = EINVAL;
 		return NULL;
 	}
 	if(bitio_flush(b)==-1){
+		/* TODO: errno has been setted by bitio_flush. 
+		 * Should we set it again or not?
+		 */
 		return NULL;
 	} 
 	return b->f;
