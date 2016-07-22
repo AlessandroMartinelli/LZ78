@@ -16,17 +16,26 @@
 #define DICTIONARY_MAX_SIZE 4294967295 /* TODO: check this value (2^32 -1)*/
 
 void usage(){
-	printf("Usage:\t...");
+	LOG(INFO, "\nUsage: lz78 [OPTION]... [ARGUMENT]...\n"
+		"compress or uncompress FILEs using algorithm lz78.\n\n"
+		"  -d, decompress\n"
+		"  -v, verbose mode\n"
+		"  -h, give this help\n"
+		"  -l, set dictionary size length. An argument is mandatory\n"
+		"  -i, set input file name. An argument is mandatory\n"
+		"  -o, set output file name. An argument is mandatory\n\n"
+		"At least input file name must be specified.\n\n"
+		"Report bugs to <ceafnmcm@gmail.com>.");
 }
 
-int safe_strcpy(char **file_name, char *optarg){
+int safe_filename_cpy(char **file_name, char *optarg){
 	uint16_t optlen = strlen(optarg); /* check optlen type */
 	if (optlen > 255){
 		LOG(INFO, "file name is too long (max 255)");
 		return 1;
 	}
 							
-	*file_name = calloc(optlen+1, 1);
+	*file_name = calloc(optlen+1, sizeof(char));
 	if (*file_name == NULL){
 		LOG(ERROR, "memory allocation failed");
 		return -1;
@@ -37,18 +46,19 @@ int safe_strcpy(char **file_name, char *optarg){
 }
 
 int main (int argc, char **argv){
-	__verbose = 0; /* global variable */
-	uint8_t dflag = 0;
-	uint8_t lflag = 0;
-	uint8_t iflag = 0;
-	uint8_t oflag = 0;
+	extern uint8_t __verbose;
+	__verbose = 0;
+	uint8_t dflag = 0;	/* decompression flag */
+	uint8_t lflag = 0;	/* length of dictionary given flag */
+	uint8_t iflag = 0;	/* input file name given flag */
+	uint8_t oflag = 0;	/* output file name given flag */
 	int64_t aux = 0;
 	int ret = 0;
 	uint32_t dictionary_size = 0;
 	char *input_file_name = NULL;
 	char *output_file_name = NULL;
+	opterr = 0; /* 0: getopt doesn't print error messages*/	
 	int c = 0;
-	opterr = 0;
 	
 	while ((c = getopt (argc, argv, "-d -v -h -l: -i: -o:")) != -1){
 		LOG(DEBUG, "c: %c, optarg: %s, optind: %d", c, optarg, optind);
@@ -79,21 +89,15 @@ int main (int argc, char **argv){
 				break;
 			case 'i':
 				iflag = 1;
-				if ((ret = safe_strcpy(&input_file_name, optarg)) != 0){
-					LOG(INFO, "Error parsing input filename"); /* TODO: it's ok? */
+				if ((ret = safe_filename_cpy(&input_file_name, optarg)) != 0){
+					LOG(INFO, "Error parsing input filename");
 					return ret;
 				}
 				break;
 			case 'o':
-				/* Here we don't have any way to know if we are in
-				 * compression or decompression mode, since the argument
-				 * order is out of our control. Thus, we have to perform
-				 * this operation in any case, even through it may be
-				 * useless under certain circumstances 
-				 */
 				oflag = 1;
-				if ((ret = safe_strcpy(&output_file_name, optarg)) != 0){
-					LOG(INFO, "Error parsing output filename"); /* TODO: it's ok? */
+				if ((ret = safe_filename_cpy(&output_file_name, optarg)) != 0){
+					LOG(INFO, "Error parsing output filename");
 					return ret;
 				}
 				break;
@@ -109,23 +113,19 @@ int main (int argc, char **argv){
 					"Try '-h' for more information", optopt);					
 				return 1;
 			default:
-				return -1;
+				return 1;
 		}
 	}
 	if (iflag == 0){
 		LOG(INFO, "Missing input file. Try '-h' for more information");
 		return 1;
 	}
-	if (dictionary_size == 0){
+	if (lflag == 0){
 		dictionary_size = DICTIONARY_DEFAULT_SIZE;
 	}
 	
-	uint8_t ofnflag = 0; //output_file_name_flag
-	if ((oflag == 1) && (dflag == 0)){
-		ofnflag = 1; 
-	}
 		LOG(INFO, "The following parameter have been choosen:\n"
-			"Compress mode    = %s\n"
+			"Compression mode = %s\n"
 			"Dictionary size  = %d %s\n"
 			"Verbose mode     = %s\n"
 			"Input file name  = %s"
@@ -133,10 +133,15 @@ int main (int argc, char **argv){
 			 (dflag == 0)? "compression" : "decompression", 
 			 dictionary_size, (lflag ==0)? "(default)" : "",
 			 (__verbose == 1)? "on" : "off", input_file_name, 
-			 (ofnflag == 1)? "\nOutput file name = " : "",
-			 (ofnflag == 1)? output_file_name : "");
+			 (oflag == 1)? "\nOutput file name = " : "",
+			 (oflag == 1)? output_file_name : "");
 	 
-	LOG(INFO, "starting...");
+	LOG(INFO, "Starting...");
+	if (dflag == 0){
+		comp(input_file_name, output_file_name, dictionary_size);
+	} else {
+		decomp(input_file_name, output_file_name);
+	}
 }
 	
 
