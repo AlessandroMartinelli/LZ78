@@ -4,32 +4,33 @@
  *  Finally, 0 was used for success.
  */
 
-#include <ctype.h>		// for isprint
-#include <stdlib.h>		// for strtol
-#include <unistd.h>		// for getopt, access
-#include <stdint.h>		//for uintXX_t
-#include <errno.h>		// for using the variabile errno
+//#include <ctype.h>		// for isprint
+#include <stdlib.h>			// for strtol
+#include <unistd.h>			// for getopt, access
+#include <stdint.h>			// for uintXX_t
+#include <errno.h>			// for using the variabile errno
+//#include <libgen.h>			// for basename XPG version
 #include "common/util.h"
 #include "encoder/comp.h"
 #include "decoder/decomp.h"
 
-#define DICTIONARY_DEFAULT_LEN 65536 /* TODO: adjust this value */
-#define DICTIONARY_MIN_LEN 4096LL /* TODO: adjust this value */
-#define DICTIONARY_MAX_LEN 4294967295LL /* TODO: check this value (2^32 -1)*/
+#define DICTIONARY_DEFAULT_LEN 65536	/* TODO: adjust this value */
+#define DICTIONARY_MIN_LEN 4096LL		/* TODO: adjust this value */
+#define DICTIONARY_MAX_LEN 4294967295LL	/* TODO: check this value (2^32 -1)*/
 #define SYMBOL_SIZE 8
 
 #define DECOMP_F	0x80	/* decompression flag */	
 #define VERB_F		0x40	/* verbose flag */	
 #define HELP_F		0x20	/* help flag */
-#define DIC_LEN_F	0x10	/* length of dictionary given flag */
-#define INPUT_F		0x08	/* input file name given flag */
-#define OUTPUT_F	0x04	/* output file name given flag */
-#define MMA_F		0x02	/* incorrect usage flag */
-#define IU_F		0x01	/* missing mandatory argument flag */
+#define DIC_LEN_F	0x10	/* length of dictionary flag */
+#define INPUT_F		0x08	/* input file flag */
+#define OUTPUT_F	0x04	/* output file flag */
+#define MMA_F		0x02	/* missing mandatory argument flag */
+#define IU_F		0x01	/* incorrect usage flag */
 
 void usage(){
-	LOG(INFO, "\nUsage: lz78 [OPTION]... [ARGUMENT]...\n"
-		"compress or uncompress FILEs using algorithm lz78.\n\n"
+	printf("Usage: lz78 [OPTION]... [ARGUMENT]...\n"
+		"Compress or uncompress FILEs using algorithm lz78.\n\n"
 		"  -d, decompress\n"
 		"  -v, verbose mode\n"
 		"  -h, give this help\n"
@@ -37,17 +38,18 @@ void usage(){
 		"  -i, set input file name. An argument is mandatory\n"
 		"  -o, set output file name. An argument is mandatory\n\n"
 		"At least input file name must be specified.\n\n"
-		"Report bugs to <ceafnmcm@gmail.com>.");
+		"Report bugs to <ceafnmcm@gmail.com>.\n");
 }
 
 int main (int argc, char **argv){
 	extern uint8_t __verbose;
 	__verbose = 0;
+	int ret = 0;
 	uint8_t flag = 0;
 	int64_t aux = 0;	
 	uint32_t dictionary_len = 0;
-	char *input_file_name = NULL;
-	char *output_file_name = NULL;
+	char *input_file = NULL;
+	char *output_file = NULL;
 	char *dictionary_len_str = NULL;
 	opterr = 0; /* 0: getopt doesn't print error messages*/	
 	int c = 0;
@@ -70,16 +72,17 @@ int main (int argc, char **argv){
 				break;
 			case 'i':
 				flag |= INPUT_F;
-				input_file_name = optarg;	
+				input_file = optarg;			
 				break;
 			case 'o':
 				flag |= OUTPUT_F;
-				output_file_name = optarg;
+				output_file = optarg;
 				break;
 			case '?':
 				if (optopt == 'l' || optopt == 'i' || optopt == 'o'){
 					flag |= MMA_F;
 					missing_mandatory_argument = optopt;
+					break;
 				}
 				/* break omitted intentionally */
 			default:
@@ -90,7 +93,12 @@ int main (int argc, char **argv){
 		LOG(INFO, "Incorrect usage. Try 'lz78 -h' for more information");
 		return 1;
 	}
-	if (flag == HELP_F){
+	if ((flag & HELP_F) != 0){
+		if (flag != HELP_F){
+			/* help_flag is setted, but it is not the only setted flag */
+			LOG(INFO, "Incorrect usage. Try 'lz78 -h' for more information");
+			return 1;
+		}
 		usage();
 		return 0;
 	}	
@@ -102,12 +110,11 @@ int main (int argc, char **argv){
 	if ((flag & INPUT_F) == 0){
 		LOG(INFO, "Missing input file. Try 'lz78 -h' for more information");
 		return 1;
-	} else {
-		if (access(input_file_name, F_OK ) == -1 ) {
-			LOG(INFO, "file %s doesn't exists", input_file_name);
-			return 1;
-		} 
-	}
+	} 
+	if (access(input_file, F_OK ) == -1 ) {
+		LOG(INFO, "file %s doesn't exists", input_file);
+		return 1;
+	} 
 	if ((flag & VERB_F) != 0){
 		__verbose = 1;
 	}
@@ -124,24 +131,24 @@ int main (int argc, char **argv){
 	}
 	
 	LOG(INFO, "The following parameter have been choosen:\n"
-		"Compression mode = %s\n"
-		"Dictionary len   = %d %s\n"
-		"Verbose mode     = %s\n"
-		"Input file name  = %s"
+		"\tCompression mode = %s\n"
+		"\tDictionary len   = %d %s\n"
+		"\tVerbose mode     = %s\n"
+		"\tInput file       = %s"
 		"%s%s",
 		 ((flag & DECOMP_F) == 0)? "compression" : "decompression", 
 		 dictionary_len, ((flag & DIC_LEN_F) == 0)? "(default)" : "",
-		 ((flag & VERB_F) != 0)? "on" : "off", input_file_name, 
-		 ((flag & OUTPUT_F) != 0)? "\nOutput file name = " : "",
-		 ((flag & OUTPUT_F) != 0)? output_file_name : "");
+		 ((flag & VERB_F) != 0)? "on" : "off", input_file, 
+		 ((flag & OUTPUT_F) != 0)? "\n\tOutput file      = " : "",
+		 ((flag & OUTPUT_F) != 0)? output_file : "");
 		 
 	LOG(INFO, "Starting...");
-	if ((flag & DECOMP_F) != 0){
-		comp(input_file_name, output_file_name, dictionary_len, SYMBOL_SIZE);
+	if ((flag & DECOMP_F) == 0){
+		ret = comp(input_file, output_file, dictionary_len, SYMBOL_SIZE);
 	} else {
-		decomp(input_file_name, output_file_name);
+		ret = decomp(input_file, output_file);
 	}
-	return 0;
+	return ret;
 }
 	
 

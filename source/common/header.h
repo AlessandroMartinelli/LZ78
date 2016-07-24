@@ -8,7 +8,7 @@
 #include <openssl/md5.h>
 
 struct header_t{
-	long int original_size;
+	uint64_t original_size;
 	char *filename;	
 	unsigned char *checksum;
 	uint32_t magic_num;

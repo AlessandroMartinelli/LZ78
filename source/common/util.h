@@ -6,6 +6,8 @@
 #include <stdint.h>			//for uintXX_t
 #include <string.h>			//for str_cpy
 #include <openssl/md5.h>	//checksum
+#include <errno.h>			// for using the variabile errno
+#include <stdlib.h>			// for calloc
 
 #define ANSI_COLOR_RED		"\x1b[31m"
 #define ANSI_COLOR_RESET	"\x1b[0m"
@@ -17,6 +19,8 @@
 enum log_type {ERROR, WARNING, INFO, DEBUG};
 
 uint8_t __verbose; 
+
+void print_bytes(char *buf, int num);
 
 #define LOG(type, _fmt, ...)										\
 	do {															\
@@ -47,7 +51,11 @@ uint8_t __verbose;
 			}															\
 	}while(0)
 	
-void csum(FILE *f, unsigned char *c);
+/* CSUM
+ *  Return an MD5-checksum calculated on the file pointed by the given
+ *  file pointer.
+ */ 
+void csum(FILE *f, unsigned char* c);
 
 #endif
 

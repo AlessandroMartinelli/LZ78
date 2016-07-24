@@ -1,7 +1,7 @@
 PROGS = lz78
 
 #CFLAGS += -Werror 
-CFLAGS = -Wall -Wunused-function
+CFLAGS = -Wall -g -Wunused-function
 CFLAGS += -Wextra
 LDFLAGS = -lm # math.h is not a standard lib, we need to include it
 LDFLAGS += -lcrypto #for md5 checksum 
