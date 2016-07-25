@@ -1,16 +1,5 @@
 #include "util.h"
 
-void print_bytes(char *buf, int num){
-	int i;
-
-	printf("\t");
-
-	for (i = 0; i < num; i++){
-		printf("%02x ", (unsigned char)(buf[i]));
-	}
-	printf("\n");
-}
-
 void csum(const char *filename, unsigned char *c){
 	MD5_CTX mdContext;
 	int bytes;

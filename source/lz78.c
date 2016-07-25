@@ -148,6 +148,7 @@ int main (int argc, char **argv){
 	} else {
 		ret = decomp(input_file, output_file);
 	}
+	LOG(INFO, "Program terminated with code %d", ret);
 	return ret;
 }
 	

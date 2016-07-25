@@ -47,9 +47,10 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	if(output_file == NULL) {
 		output_file = path_to_lz78name(input_file);
 		if (output_file == NULL){
-			LOG(ERROR, "%s", strerror(errno));		
+			LOG(ERROR, "Impossibile to automatically convert %s: %s", 
+				input_file, strerror(errno));		
+			ret = -1;
 			goto end;			
-			return -1;
 		}	
 	}
 	
@@ -57,9 +58,9 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	stat_buf = calloc(1, sizeof(struct stat));
 	if (stat_buf == NULL){
 		errno = ENOMEM;
-		LOG(ERROR, "%s", strerror(errno));	
+		LOG(ERROR, "Impossibile to create stat struct: %s", strerror(errno));	
+		ret = -1;
 		goto end;		
-		return -1;		
 	}
 	stat(input_file, stat_buf);	
 	
@@ -67,20 +68,18 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	b_in = bitio_open(input_file, READ);
 	b_out = bitio_open(output_file, WRITE);	
 	if(b_out == NULL || b_in == NULL){
-		LOG(ERROR, "%s", strerror(errno));	
+		LOG(ERROR, "Impossibile to allocaate bitio structure: %s", strerror(errno));	
+		ret = -1;
 		goto end;
-		return -1;
 	}
 	
 	/* Compute checksum of input file */
 	csum(input_file, checksum);
 	if (checksum == NULL){
-		LOG(ERROR, "%s", strerror(errno));	
-		goto end;		
-		return -1;
+		LOG(ERROR, "Impossibile to calculate csum: %s", strerror(errno));
+		ret = -1;
+		goto end;
 	}
-	//checksum[MD5_DIGEST_LENGTH] = '\0';
-	//LOG(DEBUG, "checksum vale %s", checksum);
 	
 	/* Filling of header_t structure */
 	header = (struct header_t){ 
@@ -92,17 +91,16 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 		symbol_size					/* symbol_size */
 	};
 	
-	LOG(DEBUG, "The header structure has been filled in the following way:\n"
-		"\toriginal size: %ld\n"
-		"\tinput_file_name: %s\n"
-		"\tMAGIC: %d\n"
-		"\tdictionary_size: %d\n"
-		"\tsymbol_size: %d",
+	LOG_BYTES(INFO, header.checksum, MD5_DIGEST_LENGTH, 
+		"The header structure has been filled in the following way:\n"
+		"\tOriginal size    = %ld\n"
+		"\tOriginal filname = %s\n"
+		"\tMAGIC number     = %d\n"
+		"\tdictionary_size  = %d\n"
+		"\tsymbol_size      = %d\n"
+		"\tchecksum         = ",
 		header.original_size, header.filename,
 		header.magic_num, header.dictionary_size, header.symbol_size);
-		
-	//LOG(DEBUG, "checksum: ");
-	//print_bytes((char*) header.checksum, MD5_DIGEST_LENGTH);
 	
 	/* Writing of the header at the beginning of the file
 	 * pointed to by output_file_ptr 
@@ -110,9 +108,9 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	output_file_ptr = bitio_get_file(b_out);
 	ret = header_write(&header, output_file_ptr);
 	if(ret < 0){
-		LOG(ERROR, "Header write has gone wrong");
+		LOG(ERROR, "Header write failed: %s", strerror(errno));
+		ret = -1;
 		goto end;
-		return -1;
 	}
 		
 	/* initialization of the hash table (tree abstraction) 
@@ -133,9 +131,19 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 			add_code(h_table, aux_char, parent_id, next_id++);
 			LOG(DEBUG,"emit code #%d: <\"%c\", %d>", next_id-1, aux_char, parent_id);
 			
-			bitio_write(b_out, symbol_size, (uint64_t) aux_char); /* emit character */
-			bitio_write(b_out, id_size, parent_id); /* emit parent_id */
+			ret = bitio_write(b_out, symbol_size, (uint64_t) aux_char); /* emit character */
+			if (ret < 0){
+				LOG(ERROR, "Write failed: %s", strerror(errno));
+				ret = -1;
+				goto end;
+			}
 			
+			ret = bitio_write(b_out, id_size, parent_id); /* emit parent_id */
+			if (ret < 0){
+				LOG(ERROR, "Write failed: %s", strerror(errno));
+				ret = -1;
+				goto end;
+			}			
 			parent_id = 0;
 			
 			/* dictionary is full: clean */
@@ -154,8 +162,19 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	/* just to be sure it will emits all the characters? */
 	if(node != NULL){
 		LOG(DEBUG,"<\"%c\", %d>", node->character, node->parent_id);
-		bitio_write(b_out, symbol_size, (uint64_t) node->character); /* emit character */
-		bitio_write(b_out, id_size, node->parent_id); /* emit parent_id */
+		ret = bitio_write(b_out, symbol_size, (uint64_t) node->character); /* emit character */
+		if (ret < 0){
+			LOG(ERROR, "Write failed: %s", strerror(errno));
+			ret = -1;
+			goto end;
+		}
+						
+		ret = bitio_write(b_out, id_size, node->parent_id); /* emit parent_id */
+		if (ret < 0){
+			LOG(ERROR, "Write failed: %s", strerror(errno));
+			ret = -1;
+			goto end;
+		}			
 	}
 	LOG(INFO,"Compression terminated");
 	

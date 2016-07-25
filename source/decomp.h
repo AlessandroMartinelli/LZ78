@@ -21,5 +21,5 @@ typedef struct _code_t_ {
     uint64_t parent_id;
 } code_t;
 
-void decode(code_t *array, code_t node, struct bitio* b, uint8_t symbol_size);
+int decode(code_t *array, code_t node, struct bitio* b, uint8_t symbol_size);
 int decomp(const char *filename_enc, const char *filename_dec);

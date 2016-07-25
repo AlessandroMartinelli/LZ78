@@ -16,8 +16,6 @@
 
 #define MAGIC 3
 
-enum log_type {ERROR, WARNING, INFO, DEBUG};
-
 #define LOG(type, _fmt, ...)										\
 	do {																	\
 		char prefix[8];												\
@@ -43,13 +41,48 @@ enum log_type {ERROR, WARNING, INFO, DEBUG};
 			fprintf(stdout, "[%s: %s, %d] %s: " _fmt "\n",	\
 				__FILE__, __FUNCTION__, __LINE__, prefix,		\
 				##__VA_ARGS__);										\
-			fprintf(stderr, ANSI_COLOR_RESET);					\
+			fprintf(stdout, ANSI_COLOR_RESET);					\
 			}																\
 	}while(0)
 
-uint8_t __verbose; 
+#define LOG_BYTES(type, buf, num, _fmt, ...)										\
+	do {																\
+		int i;															\
+		char prefix[8];												\
+		strcpy(prefix, "info");										\
+		if(__verbose==1 || type != DEBUG){						\
+		switch(type){													\
+				case ERROR:												\
+					fprintf(stdout, ANSI_COLOR_RED);				\
+					strcpy(prefix, "ERROR");						\
+					break;												\
+				case WARNING:											\
+					fprintf(stdout, ANSI_COLOR_YELLOW);			\
+					strcpy(prefix, "WARNING");						\
+					break;												\
+				case INFO:												\
+					strcpy(prefix, "INFO");							\
+					break;												\
+				case DEBUG:												\
+					fprintf(stdout, ANSI_COLOR_BLUE);			\
+					strcpy(prefix, "DEBUG");						\
+					break;												\
+			}																\
+			fprintf(stdout, "[%s: %s, %d] %s: " _fmt,	\
+				__FILE__, __FUNCTION__, __LINE__, prefix,		\
+				##__VA_ARGS__);											\
+			for (i = 0; i < num; i++){									\
+				fprintf(stdout, "%02x ", (unsigned char)(buf[i]));		\
+			}														\
+			fprintf(stdout, "\n");									\
+			fprintf(stdout, ANSI_COLOR_RESET);					\
+			}																\
+	}while(0)
 
-void print_bytes(char *buf, int num);
+
+enum log_type {ERROR, WARNING, INFO, DEBUG};
+
+uint8_t __verbose;
 	
 /* CSUM
  *  Return an MD5-checksum calculated on the file pointed by the given
