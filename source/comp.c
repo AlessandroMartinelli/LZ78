@@ -101,8 +101,8 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 		header.original_size, header.filename,
 		header.magic_num, header.dictionary_size, header.symbol_size);
 		
-	LOG(DEBUG, "checksum: ");
-	print_bytes((char*) header.checksum, MD5_DIGEST_LENGTH);
+	//LOG(DEBUG, "checksum: ");
+	//print_bytes((char*) header.checksum, MD5_DIGEST_LENGTH);
 	
 	/* Writing of the header at the beginning of the file
 	 * pointed to by output_file_ptr 

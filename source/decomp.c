@@ -54,7 +54,7 @@ int decomp(const char *input_file, const char *output_file){
 		return -1;
 	}
 	
-	//( ---read the header of b_in
+	//(--- read the header of b_in
 	input_file_ptr = bitio_get_file(b_in);
 	fseek(input_file_ptr, 0L, SEEK_END);
 	f_dim = ftell(input_file_ptr);
@@ -74,10 +74,8 @@ int decomp(const char *input_file, const char *output_file){
 		"\tsymbol_size      = %d",
 		header.original_size, header.filename,
 		header.magic_num, header.dictionary_size, header.symbol_size);
-		
-	LOG(DEBUG, "checksum: ");
-	print_bytes((char*) header.checksum, MD5_DIGEST_LENGTH);
-	
+	//LOG(DEBUG, "checksum: ");
+	//print_bytes((char*) header.checksum, MD5_DIGEST_LENGTH);
 	if(header.magic_num != MAGIC){
 		LOG(ERROR,"Wrong decompression/wrong file");
 		DECOMP_CLEAN();
@@ -171,8 +169,8 @@ int decomp(const char *input_file, const char *output_file){
 			DECOMP_CLEAN();
 			return -1;
 		}
-		print_bytes((char*) checksum, MD5_DIGEST_LENGTH);
-		print_bytes((char*) header.checksum, MD5_DIGEST_LENGTH);
+		//print_bytes((char*) checksum, MD5_DIGEST_LENGTH);
+		//print_bytes((char*) header.checksum, MD5_DIGEST_LENGTH);
 	
 		if(memcmp((char*)checksum, (char*)header.checksum,MD5_DIGEST_LENGTH) != 0){
 			LOG(ERROR, "Checksum error: %s", strerror(errno));

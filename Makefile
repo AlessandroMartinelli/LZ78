@@ -7,18 +7,14 @@ LDFLAGS = -lm # math.h is not a standard lib, we need to include it
 LDFLAGS += -lcrypto #for md5 checksum 
 #CFLAGS += -DDO_STAT
 
-CFLDR = source/common/
-EFLDR = source/encoder/
-DFLDR = source/decoder/
+CFLDR = source/
 BUILDFLDR = build/
-SRCS = $(addprefix $(CFLDR), header.c util.c bitio.c)
-SRCS += $(addprefix $(EFLDR), hash_table.c comp.c)
-SRCS += $(DFLDR)decomp.c
-SRCS += source/lz78.c
-OBJS= $(SRCS:%.c=%.o)
+SRCS = $(wildcard source/*.c)
+OBJS = $(SRCS:%.c=%.o)
 CLEANFILES = $(PROGS) $(OBJS)
 
 .c.o:
+	echo $@
 	$(CC) -c $(CFLAGS) $< -o $@
 
 all: $(PROGS)
@@ -26,13 +22,12 @@ all: $(PROGS)
 	mv -t $(BUILDFLDR) $(CLEANFILES)
 
 lz78: $(OBJS)
+	echo lz78
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-source/lz78.o:	$(CFLDR)util.h $(EFLDR)comp.h $(DFLDR)decomp.h
-source/decoder/decomp.o: 	$(CFLDR)bitio.h $(CFLDR)util.h \
-									$(CFLDR)header.h
-source/encoder/comp.o: 	$(CFLDR)bitio.h $(EFLDR)hash_table.h \
-								$(CFLDR)util.h $(CFLDR)header.h
+lz78.o:	$(addprefix $(CFLDR), util.h comp.h decomp.h)
+decomp.o: 	$(addprefix $(CFLDR), bitio.h util.h header.h)
+comp.o: 	$(addprefix $(CFLDR), bitio.h hash_table.h util.h header.h)
 
 .PHONY: clean
 clean:

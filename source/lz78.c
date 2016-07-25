@@ -10,9 +10,9 @@
 #include <stdint.h>			// for uintXX_t
 #include <errno.h>			// for using the variabile errno
 //#include <libgen.h>			// for basename XPG version
-#include "common/util.h"
-#include "encoder/comp.h"
-#include "decoder/decomp.h"
+#include "util.h"
+#include "comp.h"
+#include "decomp.h"
 
 #define DICTIONARY_DEFAULT_LEN 65536	/* TODO: adjust this value */
 #define DICTIONARY_MIN_LEN 4096LL		/* TODO: adjust this value */

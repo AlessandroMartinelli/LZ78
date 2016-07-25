@@ -2,9 +2,9 @@
 #include <unistd.h>			/* stat */
 #include <math.h>			/* log, ceil */
 #include <libgen.h>			/* for basename XPG version */
-#include "../common/bitio.h"
-#include "../common/util.h"
-#include "../common/header.h"
+#include "bitio.h"
+#include "util.h"
+#include "header.h"
 #include "hash_table.h"
 
 /* PATH_TO_LZ78NAME
