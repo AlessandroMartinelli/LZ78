@@ -129,19 +129,19 @@ int main (int argc, char **argv){
 	} else {
 		dictionary_len = DICTIONARY_DEFAULT_LEN;
 	}
-	
-	LOG(INFO, "The following parameter have been choosen:\n"
-		"\tCompression mode = %s\n"
-		"\tDictionary len   = %d %s\n"
-		"\tVerbose mode     = %s\n"
-		"\tInput file       = %s"
-		"%s%s",
-		 ((flag & DECOMP_F) == 0)? "compression" : "decompression", 
-		 dictionary_len, ((flag & DIC_LEN_F) == 0)? "(default)" : "",
-		 ((flag & VERB_F) != 0)? "on" : "off", input_file, 
-		 ((flag & OUTPUT_F) != 0)? "\n\tOutput file      = " : "",
-		 ((flag & OUTPUT_F) != 0)? output_file : "");
-		 
+	if ((flag & DECOMP_F) == 0){
+		LOG(INFO, "The following parameter have been choosen:\n"
+			"\tCompression mode = %s\n"
+			"\tDictionary len   = %d %s\n"
+			"\tVerbose mode     = %s\n"
+			"\tInput file       = %s"
+			"%s%s",
+			((flag & DECOMP_F) == 0)? "compression" : "decompression", 
+			dictionary_len, ((flag & DIC_LEN_F) == 0)? "(default)" : "",
+			((flag & VERB_F) != 0)? "on" : "off", input_file, 
+			((flag & OUTPUT_F) != 0)? "\n\tOutput file      = " : "",
+			((flag & OUTPUT_F) != 0)? output_file : "");
+	}
 	LOG(INFO, "Starting...");
 	if ((flag & DECOMP_F) == 0){
 		ret = comp(input_file, output_file, dictionary_len, SYMBOL_SIZE);

@@ -31,8 +31,7 @@ int header_write(struct header_t *h, FILE *f){
 	return 0;
 }
 
-int header_read(struct header_t *h, FILE *f){	
-	char end_string;
+int header_read(struct header_t *h, FILE *f){
 	uint32_t filename_len; 
 	int ret;
 	char *buf = NULL;
@@ -51,7 +50,7 @@ int header_read(struct header_t *h, FILE *f){
 	
 	h->checksum = (unsigned char*)malloc(MD5_DIGEST_LENGTH);
 	ret = fread(h->checksum, MD5_DIGEST_LENGTH, 1, f);	
-	printf("ret del checksum vale %d\n", ret);
+	//printf("ret del checksum vale %d\n", ret);
 	
 	/*
 	ret = fscanf(f,"%d%d%d%d",&(h->magic_num), &(h->dictionary_size), 
@@ -62,8 +61,8 @@ int header_read(struct header_t *h, FILE *f){
 	}
 	*/
 	
-	printf("magic_num: %d, dictionary_size: %d, symbol_size: %d, filename_len: %d\n",
-		h->magic_num, h->dictionary_size, h->symbol_size, filename_len);
+	/*printf("magic_num: %d, dictionary_size: %d, symbol_size: %d, filename_len: %d\n",
+		h->magic_num, h->dictionary_size, h->symbol_size, filename_len);*/
 	/*
 	//allocates a single block of memory shared among filename and checksum
 	buf = (char*)calloc(1, MD5_DIGEST_LENGTH + filename_size + 1);

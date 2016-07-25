@@ -1,10 +1,5 @@
 #include "comp.h"
 
-#define COMP_CLEAN()							\
-	if(h_table!=NULL) free_table(h_table);		\
-	if(b_in != NULL) bitio_close(b_in);			\
-	if(b_out != NULL) bitio_close(b_out);		\
-	if(output_file != NULL) free(output_file);
 
 char* path_to_lz78name(char* path){
 	char base_name[sizeof(basename(path))+1] = "\0"; /* name without path */
@@ -37,14 +32,13 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	struct header_t header;
 	hash_table_t *h_table = NULL;
 	list_t *node = NULL;
-	FILE* input_file_ptr = NULL;
 	FILE* output_file_ptr = NULL;	
 	uint64_t aux_64;
 	char aux_char;
 	int ret;
 	uint16_t next_id;
 	uint16_t parent_id;
-	uint16_t id_size;
+	uint8_t id_size;
 	unsigned char checksum[MD5_DIGEST_LENGTH];
 	
 	/* If the caller has not explicitly given a name for the output file,
@@ -54,7 +48,7 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 		output_file = path_to_lz78name(input_file);
 		if (output_file == NULL){
 			LOG(ERROR, "%s", strerror(errno));		
-			COMP_CLEAN();			
+			goto end;			
 			return -1;
 		}	
 	}
@@ -64,7 +58,7 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	if (stat_buf == NULL){
 		errno = ENOMEM;
 		LOG(ERROR, "%s", strerror(errno));	
-		COMP_CLEAN();		
+		goto end;		
 		return -1;		
 	}
 	stat(input_file, stat_buf);	
@@ -74,16 +68,15 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	b_out = bitio_open(output_file, WRITE);	
 	if(b_out == NULL || b_in == NULL){
 		LOG(ERROR, "%s", strerror(errno));	
-		COMP_CLEAN();
+		goto end;
 		return -1;
 	}
 	
 	/* Compute checksum of input file */
-	input_file_ptr = bitio_get_file(b_in);	
-	csum(input_file_ptr, checksum);
+	csum(input_file, checksum);
 	if (checksum == NULL){
 		LOG(ERROR, "%s", strerror(errno));	
-		COMP_CLEAN();		
+		goto end;		
 		return -1;
 	}
 	//checksum[MD5_DIGEST_LENGTH] = '\0';
@@ -109,7 +102,7 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 		header.magic_num, header.dictionary_size, header.symbol_size);
 		
 	LOG(DEBUG, "checksum: ");
-	print_bytes(header.checksum, MD5_DIGEST_LENGTH);
+	print_bytes((char*) header.checksum, MD5_DIGEST_LENGTH);
 	
 	/* Writing of the header at the beginning of the file
 	 * pointed to by output_file_ptr 
@@ -118,7 +111,7 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	ret = header_write(&header, output_file_ptr);
 	if(ret < 0){
 		LOG(ERROR, "Header write has gone wrong");
-		COMP_CLEAN();
+		goto end;
 		return -1;
 	}
 		
@@ -128,7 +121,7 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	h_table = create_hash_table(dictionary_size); //??
 	parent_id = 0;
 	next_id = 1;
-	id_size = (uint16_t) ceil(log(dictionary_size)); /* log base 2 */
+	id_size = ceil_log2(dictionary_size); /* log base 2 */
 	
 	while(sizeof(char)*8 == (ret = bitio_read(b_in, sizeof(char)*8, &aux_64))){
 	/* as long as characters are available */
@@ -138,17 +131,17 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 		if(node == NULL){ 
 			/* node not found */
 			add_code(h_table, aux_char, parent_id, next_id++);
-			//LOG(DEBUG,"emit code #%d: <\"%c\", %d>", next_id-1, aux_char, parent_id);
+			LOG(DEBUG,"emit code #%d: <\"%c\", %d>", next_id-1, aux_char, parent_id);
 			
 			bitio_write(b_out, symbol_size, (uint64_t) aux_char); /* emit character */
-			bitio_write(b_out, id_size/*XXX*/, parent_id); /* emit parent_id */
+			bitio_write(b_out, id_size, parent_id); /* emit parent_id */
 			
 			parent_id = 0;
 			
 			/* dictionary is full: clean */
-			if(next_id == dictionary_size){
+			if(next_id > dictionary_size){
 				LOG(WARNING, "Dictionary full!");
-				next_id = 0;
+				next_id = 1;
 				free_table(h_table);
 				h_table = create_hash_table(dictionary_size);
 			}
@@ -160,12 +153,15 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	}
 	/* just to be sure it will emits all the characters? */
 	if(node != NULL){
-		//LOG(DEBUG,"<\"%c\", %d>", node->character, node->parent_id);
-		bitio_write(b_out, symbol_size, (uint64_t) aux_char); /* emit character */
-		bitio_write(b_out, id_size/*XXX*/, parent_id); /* emit parent_id */
+		LOG(DEBUG,"<\"%c\", %d>", node->character, node->parent_id);
+		bitio_write(b_out, symbol_size, (uint64_t) node->character); /* emit character */
+		bitio_write(b_out, id_size, node->parent_id); /* emit parent_id */
 	}
 	LOG(INFO,"Compression terminated");
 	
-	COMP_CLEAN();
+end:
+	if(h_table!=NULL) free_table(h_table);
+	if(b_in != NULL) bitio_close(b_in);
+	if(b_out != NULL) bitio_close(b_out);
 	return 0;
 }

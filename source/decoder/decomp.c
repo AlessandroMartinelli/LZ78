@@ -8,14 +8,16 @@
 
 #include "decomp.h"
 
-#define DECOMP_CLEAN()									\
+#define DECOMP_CLEAN()								\
 	if(b_in != NULL) bitio_close(b_in);			\
 	if(b_out != NULL) bitio_close(b_out);
 
 void decode(code_t *array, code_t node, struct bitio* b, uint8_t symbol_size){
+	//LOG(DEBUG, "\tDecode <\"%c\", %lu>", node.character, node.parent_id);
 	if(node.parent_id!=0){
 		decode(array, array[node.parent_id - 1], b, symbol_size);
 	}
+	//LOG(DEBUG, "emit <\"%c\", %lu>", node.character, node.parent_id);
 	bitio_write(b, symbol_size, node.character); /* emit character */
 	return;
 }
@@ -23,18 +25,18 @@ void decode(code_t *array, code_t node, struct bitio* b, uint8_t symbol_size){
 int decomp(const char *input_file, const char *output_file){
 	struct bitio *b_in = NULL;
 	struct bitio *b_out = NULL;
+	int ret_symbol, ret_id;
 	char aux_char;
 	uint32_t size;
-	uint32_t dictionary_size;	
+	uint32_t dictionary_size;
 	uint64_t num_of_codes;
-	uint64_t f_curr;
+	uint64_t f_dim;
 	uint64_t aux_64;
 	uint8_t symbol_size;
 	uint16_t id_size;
 	uint64_t i;
 	unsigned char checksum[MD5_DIGEST_LENGTH];
-	//unsigned char *checksum = NULL;
-	uint8_t checksum_match = 1;
+	uint8_t size_match = 1;
 	FILE* input_file_ptr = NULL;
 	struct header_t header;
 	struct stat *stat_buf = NULL;
@@ -54,23 +56,27 @@ int decomp(const char *input_file, const char *output_file){
 	
 	//( ---read the header of b_in
 	input_file_ptr = bitio_get_file(b_in);
+	fseek(input_file_ptr, 0L, SEEK_END);
+	f_dim = ftell(input_file_ptr);
+	fseek(input_file_ptr, 0L, SEEK_SET);
+	
 	if(header_read(&header, input_file_ptr) < 0){
 		LOG(ERROR, "Header read gone wrong");
 		DECOMP_CLEAN();
 		return -1;
 	}
 	
-	LOG(DEBUG, "The header structure has been filled in the following way:\n"
-		"\toriginal size: %ld\n"
-		"\tinput_file_name %s\n"
-		"\tMAGIC %d\n"
-		"\tdictionary_size %d\n"
-		"\tsymbol_size %d",
+	LOG(INFO, "The header structure has been filled in the following way:\n"
+		"\tOriginal size    = %ld\n"
+		"\tOriginal filname = %s\n"
+		"\tMAGIC number     = %d\n"
+		"\tdictionary_size  = %d\n"
+		"\tsymbol_size      = %d",
 		header.original_size, header.filename,
 		header.magic_num, header.dictionary_size, header.symbol_size);
 		
 	LOG(DEBUG, "checksum: ");
-	print_bytes(header.checksum, MD5_DIGEST_LENGTH);
+	print_bytes((char*) header.checksum, MD5_DIGEST_LENGTH);
 	
 	if(header.magic_num != MAGIC){
 		LOG(ERROR,"Wrong decompression/wrong file");
@@ -78,7 +84,7 @@ int decomp(const char *input_file, const char *output_file){
 		return -1;
 	}
 	dictionary_size = header.dictionary_size;
-	id_size = (uint16_t) ceil(log(dictionary_size)); /* log base 2 */
+	id_size = ceil_log2(dictionary_size); /* log base 2 */
 	symbol_size = header.symbol_size;
 	//---)
 	
@@ -90,54 +96,93 @@ int decomp(const char *input_file, const char *output_file){
 	}
 	
 	/* get the number of codes */
-	f_curr = ftell(input_file_ptr);
-	fseek(input_file_ptr, 0L, SEEK_END);
-	num_of_codes = ftell(input_file_ptr) - f_curr;
-	fseek(input_file_ptr, 0L, f_curr);
-	num_of_codes /= symbol_size+id_size;     /* normalize the number of array
-													      * elements by the code dimension*/
+	num_of_codes = f_dim - ftell(input_file_ptr);
+	num_of_codes *= 8; // bytes to bits
+	num_of_codes /= symbol_size+id_size;	/* normalize the number of array
+														 * elements by the code dimension*/
+	LOG(INFO,"num_of_codes: %lu",num_of_codes);
+	
 	/* the dictionary is clean every dictionary_size codes */
 	size = (num_of_codes <= dictionary_size)? num_of_codes : dictionary_size;
-	LOG(INFO,"size: %d\n",size);
-	
+	LOG(INFO,"dictionary size: %d",size); 
 	code_t nodes[size];
 	
 	for(i=0; i<num_of_codes; i++){
-		if(bitio_read(b_in, id_size, &aux_64) == id_size &&
-			bitio_read(b_in, symbol_size, (uint64_t*) &aux_char) == symbol_size){
-			nodes[i%size].character = (char) aux_char;
-			nodes[i%size].parent_id = aux_64;
-			LOG(INFO, "<\"%c\", %lu>\n", nodes[i%size].character, nodes[i%size].parent_id);
-			decode(nodes, nodes[i%size], b_out, symbol_size);
+		/* clean of the dictionary not needed */
+		if(i!=0 && i%dictionary_size == 0) LOG(WARNING, "Clean the dictionary");
+		
+		ret_symbol = bitio_read(b_in, symbol_size, &aux_64);
+		aux_char = (char) aux_64;
+		ret_id = bitio_read(b_in, id_size, &aux_64);
+		
+		if(ret_symbol == symbol_size && ret_id == id_size){
+			nodes[i%dictionary_size].character = (char) aux_char;
+			nodes[i%dictionary_size].parent_id = aux_64;
+			LOG(DEBUG, "Code read #%lu: <\"%c\", %lu>", i%dictionary_size,
+				nodes[i%dictionary_size].character,
+				nodes[i%dictionary_size].parent_id);
+			decode(nodes, nodes[i%dictionary_size], b_out, symbol_size);
 		}
 		else{
-			LOG(ERROR,"Code unreadable");
-		DECOMP_CLEAN();
-		return -1;
+			nodes[i%dictionary_size].character = (char) aux_char;
+			nodes[i%dictionary_size].parent_id = aux_64;
+			LOG(ERROR,"Code unreadable <\"%c\", %lu>",
+				nodes[i%dictionary_size].character,
+				nodes[i%dictionary_size].parent_id);
+			decode(nodes, nodes[i%dictionary_size], b_out, symbol_size);
+			DECOMP_CLEAN();
+			return -1;
 		}
-		/*clean of the dictionary not needed*/
 	}
 	
-	/* compare headers */
-	FILE* f_out = bitio_get_file(b_out);
-	csum(f_out, checksum);
-	
-	int ret = strncmp(checksum, header.checksum, MD5_DIGEST_LENGTH);
-	if (ret == 0){
-		LOG(INFO, "checksum successfully verified");
+	/* flush bitio buffer*/
+	bitio_close(b_out);
+	b_out = NULL;
+
+	/* compare file size */
+	stat_buf = calloc(1, sizeof(struct stat));
+	if (stat_buf == NULL){
+		errno = ENOMEM;
+		LOG(ERROR, "%s", strerror(errno));
+		DECOMP_CLEAN();
+		size_match = 0;
+	} else {
+		stat(output_file,stat_buf);
+		if(stat_buf == NULL){
+			LOG(ERROR, "Cannot compute stats on %s", output_file);
+			DECOMP_CLEAN();
+			size_match = 0;
+		} else {
+			if((uint64_t)stat_buf->st_size != header.original_size){
+				LOG(ERROR,"Original size error");
+				DECOMP_CLEAN();
+				size_match = 0;
+			} else {
+				LOG(INFO, "size OK!");
+			}
+		}
 	}
 	
-	for(i=0; i<MD5_DIGEST_LENGTH; i++){
-		if(checksum[i] == header.checksum[i]) continue;
-		LOG(WARNING, "Checksum error");
-		checksum_match = 0;
-		break;
+	if(size_match){
+		/* compare checksum */
+		csum(output_file, checksum);
+		if (checksum == NULL){
+			LOG(ERROR, "%s", strerror(errno));
+			DECOMP_CLEAN();
+			return -1;
+		}
+		print_bytes((char*) checksum, MD5_DIGEST_LENGTH);
+		print_bytes((char*) header.checksum, MD5_DIGEST_LENGTH);
+	
+		if(memcmp((char*)checksum, (char*)header.checksum,MD5_DIGEST_LENGTH) != 0){
+			LOG(ERROR, "Checksum error: %s", strerror(errno));
+		}
+		else{
+			LOG(INFO, "Checksum OK!");
+		}
 	}
-	if(checksum_match){
-		fstat(fileno(f_out),stat_buf);
-		if(stat_buf->st_size != header.original_size)
-			LOG(WARNING,"Original size error");
-	}
+	
+	/* Cannot use goto because of vector nodes (with variably modified type) */
 	DECOMP_CLEAN();
 	return 0;
 }
