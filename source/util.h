@@ -8,6 +8,8 @@
 #include <openssl/md5.h>	//checksum
 #include <errno.h>			// for using the variabile errno
 #include <stdlib.h>			// for calloc
+#include "bitio.h"
+#include "header.h"
 
 #define ANSI_COLOR_RED		"\x1b[31m"
 #define ANSI_COLOR_RESET	"\x1b[0m"
@@ -81,6 +83,12 @@
 
 
 enum log_type {ERROR, WARNING, INFO, DEBUG};
+
+struct gstate{
+	struct bitio* b_in;
+	struct bitio* b_out;
+	struct header_t* header;
+};
 
 uint8_t __verbose;
 	

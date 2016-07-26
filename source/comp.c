@@ -1,38 +1,12 @@
 #include "comp.h"
 
-
-char* path_to_lz78name(char* path){
-	char base_name[sizeof(basename(path))+1] = "\0"; /* name without path */
-	char *dot_ptr = NULL;	/* pointer at last dot inside a filename */
-	char *lz78name = NULL;	/* this one will store the resulting string */
-	uint8_t dot_index = 0;	/* position of the last dot inside ta filename */
-	
-	/* extract the name without path and 
-	 * discover the position of the last dot inside the filename 
-	 */
-	strcpy(base_name, basename(path));
-	dot_ptr = strrchr(base_name, '.');
-	dot_index = (uint8_t)(dot_ptr - base_name);
-	
-	/* create and return the new string */	
-	lz78name = calloc(dot_index + 5 + 1, sizeof(char));
-	if (lz78name == NULL){
-		errno = ENOMEM;
-		return NULL;
-	}
-	strncpy(lz78name, base_name, dot_index);
-	strcat(lz78name, ".lz78");
-	return lz78name;
-}	
-
 int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t symbol_size){
 	struct bitio *b_out = NULL;
 	struct bitio *b_in = NULL;
 	struct stat *stat_buf = NULL;	
 	struct header_t header;
 	hash_table_t *h_table = NULL;
-	list_t *node = NULL;
-	FILE* output_file_ptr = NULL;	
+	list_t *node = NULL;	
 	uint64_t aux_64;
 	char aux_char;
 	int ret;
@@ -42,7 +16,8 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	unsigned char checksum[MD5_DIGEST_LENGTH];
 	
 	
-	LOG(DEBUG, "Check values read:\n\tdictionary_size: %u\n\tid_size: %d\n\tsymbol_size: %d", dictionary_size, id_size, symbol_size);
+	LOG(DEBUG, "Check values read:\n\tdictionary_size: %u\n\tid_size: " 
+		"%d\n\tsymbol_size: %d", dictionary_size, id_size, symbol_size);
 	
 	/* If the caller has not explicitly given a name for the output file,
 	*  here we create it, as <name_without_extension>.lz78 
@@ -67,14 +42,7 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	}
 	stat(input_file, stat_buf);	
 	
-	/* Allocation and initialization of bitio structures */
-	b_in = bitio_open(input_file, READ);
-	b_out = bitio_open(output_file, WRITE);	
-	if(b_out == NULL || b_in == NULL){
-		LOG(ERROR, "Impossibile to allocaate bitio structure: %s", strerror(errno));	
-		ret = -1;
-		goto end;
-	}
+	
 	
 	/* Compute checksum of input file */
 	csum(input_file, checksum);
@@ -105,16 +73,7 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 		header.original_size, header.filename,
 		header.magic_num, header.dictionary_size, header.symbol_size);
 	
-	/* Writing of the header at the beginning of the file
-	 * pointed to by output_file_ptr 
-	 */
-	output_file_ptr = bitio_get_file(b_out);
-	ret = header_write(&header, output_file_ptr);
-	if(ret < 0){
-		LOG(ERROR, "Header write failed: %s", strerror(errno));
-		ret = -1;
-		goto end;
-	}
+
 		
 	/* initialization of the hash table (tree abstraction) 
 	 * and other variables 
