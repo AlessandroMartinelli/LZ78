@@ -78,8 +78,8 @@ int decomp(const char *input_file, const char *output_file){
 		"\tOriginal size    = %ld\n"
 		"\tOriginal filname = %s\n"
 		"\tMAGIC number     = %d\n"
-		"\tdictionary_size  = %d\n"
-		"\tsymbol_size      = %d\n"
+		"\tdictionary_size  = %u\n"
+		"\tsymbol_size      = %u\n"
 		"\tchecksum         = ",
 		header.original_size, header.filename,
 		header.magic_num, header.dictionary_size, header.symbol_size);
@@ -93,6 +93,7 @@ int decomp(const char *input_file, const char *output_file){
 	dictionary_size = header.dictionary_size;
 	id_size = ceil_log2(dictionary_size); /* log base 2 */
 	symbol_size = header.symbol_size;
+	LOG(DEBUG, "Check values read:\n\tdictionary_size: %u\n\tid_size: %d\n\tsymbol_size: %d", dictionary_size, id_size, symbol_size);
 	//---)
 	
 	output_file = (output_file == NULL) ? header.filename : output_file;

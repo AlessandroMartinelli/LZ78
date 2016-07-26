@@ -132,7 +132,7 @@ int main (int argc, char **argv){
 	if ((flag & DECOMP_F) == 0){
 		LOG(INFO, "The following parameter have been choosen:\n"
 			"\tCompression mode = %s\n"
-			"\tDictionary len   = %d %s\n"
+			"\tDictionary len   = %u %s\n"
 			"\tVerbose mode     = %s\n"
 			"\tInput file       = %s"
 			"%s%s",

@@ -38,8 +38,11 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	int ret;
 	uint16_t next_id;
 	uint16_t parent_id;
-	uint8_t id_size;
+	uint8_t id_size = ceil_log2(dictionary_size); /* log base 2 */;
 	unsigned char checksum[MD5_DIGEST_LENGTH];
+	
+	
+	LOG(DEBUG, "Check values read:\n\tdictionary_size: %u\n\tid_size: %d\n\tsymbol_size: %d", dictionary_size, id_size, symbol_size);
 	
 	/* If the caller has not explicitly given a name for the output file,
 	*  here we create it, as <name_without_extension>.lz78 
@@ -96,8 +99,8 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 		"\tOriginal size    = %ld\n"
 		"\tOriginal filname = %s\n"
 		"\tMAGIC number     = %d\n"
-		"\tdictionary_size  = %d\n"
-		"\tsymbol_size      = %d\n"
+		"\tdictionary_size  = %u\n"
+		"\tsymbol_size      = %u\n"
 		"\tchecksum         = ",
 		header.original_size, header.filename,
 		header.magic_num, header.dictionary_size, header.symbol_size);
@@ -116,10 +119,15 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	/* initialization of the hash table (tree abstraction) 
 	 * and other variables 
 	 */
-	h_table = create_hash_table(dictionary_size); //??
+	h_table = create_hash_table(dictionary_size/AVG_CODES_PER_ENTRY); //??
+	if(h_table == NULL){
+		LOG(ERROR, "Dictionary allocation failed: %s%s", strerror(errno),
+			(errno == ENOMEM) ? ". Try with a smaller dictionary length":"");
+		ret = -1;
+		goto end;
+	}
 	parent_id = 0;
 	next_id = 1;
-	id_size = ceil_log2(dictionary_size); /* log base 2 */
 	
 	while(sizeof(char)*8 == (ret = bitio_read(b_in, sizeof(char)*8, &aux_64))){
 	/* as long as characters are available */
@@ -151,7 +159,7 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 				LOG(WARNING, "Dictionary full!");
 				next_id = 1;
 				free_table(h_table);
-				h_table = create_hash_table(dictionary_size);
+				h_table = create_hash_table(dictionary_size/AVG_CODES_PER_ENTRY);
 			}
 		}
 		else{
@@ -177,10 +185,10 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 		}			
 	}
 	LOG(INFO,"Compression terminated");
-	
+	ret = 0;
 end:
 	if(h_table!=NULL) free_table(h_table);
 	if(b_in != NULL) bitio_close(b_in);
 	if(b_out != NULL) bitio_close(b_out);
-	return 0;
+	return ret;
 }

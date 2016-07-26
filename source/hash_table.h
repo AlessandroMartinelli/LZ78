@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdlib.h>
+#include <errno.h>
 
 typedef struct _list_t_ {
     /*key: <parent node id, character>*/
@@ -13,18 +14,18 @@ typedef struct _list_t_ {
 } list_t;
 
 typedef struct _hash_table_t_ {
-    int size;       /* the size of the table */
+    uint32_t size;       /* the size of the table */
     list_t **table; /* the table elements */
 } hash_table_t;
 
 /* --- create_hash_table: create the hash table and initialize all the elements
  * Parameter:
- * - (input)int: the size of the table
+ * - (input)uint32_t: the size of the table
  * Returns(pointer to a struct hast_table_t)
  * - NULL:  error in allocating the new node memory space or
  *   error in allocating the table memory space
  */
-hash_table_t *create_hash_table(int);
+hash_table_t *create_hash_table(uint32_t);
 
 /* --- hash: hash function
  * Parameters

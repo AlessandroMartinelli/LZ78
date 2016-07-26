@@ -7,6 +7,8 @@
 #include "header.h"
 #include "hash_table.h"
 
+#define AVG_CODES_PER_ENTRY 1 /* spread factor */
+
 /* PATH_TO_LZ78NAME
  *  Convert a filename, possibly comprehensive of path, 
  *  to the base name of the file, with extension changed to .lz78.
