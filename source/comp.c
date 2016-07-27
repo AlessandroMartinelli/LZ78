@@ -19,19 +19,6 @@ int comp(char *input_file, char *output_file, uint32_t dictionary_size, uint8_t 
 	LOG(DEBUG, "Check values read:\n\tdictionary_size: %u\n\tid_size: " 
 		"%d\n\tsymbol_size: %d", dictionary_size, id_size, symbol_size);
 	
-	/* If the caller has not explicitly given a name for the output file,
-	*  here we create it, as <name_without_extension>.lz78 
-	*/
-	if(output_file == NULL) {
-		output_file = path_to_lz78name(input_file);
-		if (output_file == NULL){
-			LOG(ERROR, "Impossibile to automatically convert %s: %s", 
-				input_file, strerror(errno));		
-			ret = -1;
-			goto end;			
-		}	
-	}
-	
 	/* Allocation and initialization of stat structure */
 	stat_buf = calloc(1, sizeof(struct stat));
 	if (stat_buf == NULL){

@@ -39,14 +39,14 @@ char* path_to_lz78name(char* path){
 	char *lz78name = NULL;	/* this one will store the resulting string */
 	uint8_t dot_index = 0;	/* position of the last dot inside ta filename */
 	
-	/* extract the name without path and 
-	 * discover the position of the last dot inside the filename 
+	/* Extract the name without path and discover 
+	 * the position of the last dot inside the filename 
 	 */
 	strcpy(base_name, basename(path));
 	dot_ptr = strrchr(base_name, '.');
 	dot_index = (uint8_t)(dot_ptr - base_name);
 	
-	/* create and return the new string */	
+	/* Create and return the new string */	
 	lz78name = calloc(dot_index + 5 + 1, sizeof(char));
 	if (lz78name == NULL){
 		errno = ENOMEM;
@@ -65,6 +65,9 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	struct stat stat_buf;
 	unsigned char checksum[MD5_DIGEST_LENGTH];	
 	
+	/* If the caller has not explicitly given a name for the output file,
+	*  here we create it, as <name_without_extension>.lz78 
+	*/			
 	output_file = (output_file == NULL)? path_to_lz78name(input_file) : output_file;
 	
 	/* Allocation of header_t structure */
@@ -75,10 +78,10 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 		return -1;
 	}
 	
-	/* Initialization of stat structure */
+	/* Initialization of stat structure (stat_buf) */
 	stat(input_file, &stat_buf);	
 	
-	/* Compute checksum of input file */
+	/* Compute checksum of input file and put it in "checksum" */
 	csum(input_file, checksum);
 	if (checksum == NULL){
 		LOG(ERROR, "Impossibile to calculate csum: %s", strerror(errno));
@@ -111,7 +114,7 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	state->b_in = bitio_open(input_file, READ);
 	state->b_out = bitio_open(output_file, WRITE);	
 	if(state->b_out == NULL || state->b_in == NULL){
-		LOG(ERROR, "Impossibile to allocaate bitio structure: %s", strerror(errno));	
+		LOG(ERROR, "Impossibile to allocate bitio structure: %s", strerror(errno));	
 		return -1;
 		/*TODO: handle free of bitio */
 	}		
@@ -129,13 +132,12 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	return 0;
 }
 
-int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file, uint32_t dictionary_len){
+int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file, uint64_t *f_dim){
 	int ret;
 	state->b_in = NULL;
 	state->b_out = NULL;
-	struct stat stat_buf;
-	unsigned char checksum[MD5_DIGEST_LENGTH];	
-	
+	FILE* input_file_ptr = NULL;
+
 	/* Allocation of header_t structure */
 	state->header = calloc(1, sizeof(struct header_t));
 	if (state->header == NULL){
@@ -143,29 +145,35 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 		LOG(ERROR, "Impossibile to create header_t structure: %s", strerror(errno));
 		return -1;
 	}
-	
-	/* Initialization of stat structure */
-	stat(input_file, &stat_buf);	
-	
-	/* Compute checksum of input file */
-	csum(input_file, checksum);
-	if (checksum == NULL){
-		LOG(ERROR, "Impossibile to calculate csum: %s", strerror(errno));
-		ret = -1;
+
+	/* Allocation and initialization of bitio read structure */
+	state->b_in = bitio_open(input_file, READ);
+	if(state->b_in == NULL){
+		LOG(ERROR, "Impossibile to allocate bitio structure: %s", strerror(errno));	
+		return -1;
+		/*TODO: handle free of bitio */
 	}		
+
+	/* We take the input file pointer from the bitio read structure, 
+	 * then we retrieve the file dimension. The choice of retrieving the
+	 * file dimension here isn'n very appropriate, but it is useful
+	 * since here, before reading the header, is easier to scan the
+	 * file up and down without any concern.
+	 */
+	input_file_ptr = bitio_get_file(state->b_in);
+	fseek(input_file_ptr, 0L, SEEK_END);
+	*f_dim = ftell(input_file_ptr);
+	fseek(input_file_ptr, 0L, SEEK_SET);
 	
-	/* Filling of header_t structure */
-	*(state->header) = (struct header_t){ 
-		stat_buf.st_size,			/* original_size */
-		basename(input_file), 		/* input file name */
-		checksum,					/* checksum */
-		MAGIC,						/* magic number */
-		dictionary_len,				/* dictionary_size */
-		SYMBOL_SIZE					/* symbol_size */
-	};
+	/* reading of the header */
+	ret = header_read(state->header, input_file_ptr);
+	if (ret < 0){
+		LOG(ERROR, "Header read failed: %s", strerror(errno));
+		/* clean */
+		return -1;
+	}
 	
-	LOG_BYTES(INFO, state->header->checksum, MD5_DIGEST_LENGTH, 
-		"The header structure has been filled in the following way:\n"
+	LOG_BYTES(INFO, state->header->checksum, MD5_DIGEST_LENGTH, "The header structure has been filled in the following way:\n"
 		"\tOriginal size    = %ld\n"
 		"\tOriginal filname = %s\n"
 		"\tMAGIC number     = %d\n"
@@ -173,12 +181,23 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 		"\tsymbol_size      = %u\n"
 		"\tchecksum         = ",
 		state->header->original_size, state->header->filename,
-		state->header->magic_num, state->header->dictionary_size, 
-		state->header->symbol_size);
-		
+		state->header->magic_num, state->header->dictionary_size, state->header->symbol_size);
+
+	/* If the caller has not explicitly given a name for the output file,
+	*  we grab it from the header we've just read 
+	*/	
+	output_file = (output_file == NULL)? state->header->filename : output_file;
+	
+	/* Allocation and initialization of output bitio structure */
+	state->b_out = bitio_open(output_file, WRITE);
+	if(state->b_out == NULL){
+		LOG(ERROR, "Impossibile to allocate bitio structure: %s", strerror(errno));	
+		return -1;
+		/*TODO: handle free of bitio */
+	}		
+	
 	return 0;
 }
-
 
 
 int main (int argc, char **argv){
@@ -294,15 +313,13 @@ int main (int argc, char **argv){
 	LOG(INFO, "Starting...");
 	
 	struct gstate state;
-	ret = comp_init_gstate(&state, input_file, output_file, dictionary_len);
-	
-	return 0;
-	
 	if ((flag & DECOMP_F) == 0){
-		ret = comp(input_file, output_file, dictionary_len, SYMBOL_SIZE);
+		ret = comp_init_gstate(&state, input_file, output_file, dictionary_len);
 	} else {
-		ret = decomp(input_file, output_file);
-	}
+		uint64_t f_dim;
+		ret = decomp_init_gstate(&state, input_file, output_file, &f_dim);	
+	}	
+	
 	LOG(INFO, "Program terminated with code %d", ret);
 	return ret;
 }
