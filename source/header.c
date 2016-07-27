@@ -5,7 +5,7 @@ int header_write(struct header_t *h, FILE *f){
 	uint32_t filename_len = strlen(h->filename)*sizeof(char);
 	
 	ret += fwrite(&(h->magic_num), sizeof(uint32_t), 1, f);
-	ret += fwrite(&(h->dictionary_size), sizeof(uint32_t), 1, f);
+	ret += fwrite(&(h->dictionary_len), sizeof(uint32_t), 1, f);
 	ret += fwrite(&(h->symbol_size), sizeof(uint8_t), 1, f);
 	ret += fwrite(&filename_len, sizeof(uint32_t), 1, f);
 	ret += fwrite(h->filename, filename_len + 1, 1, f);
@@ -24,7 +24,7 @@ int header_read(struct header_t *h, FILE *f){
 	int ret = 0;
 	
 	ret += fread(&(h->magic_num), sizeof(uint32_t), 1, f);
-	ret += fread(&(h->dictionary_size), sizeof(uint32_t), 1, f);
+	ret += fread(&(h->dictionary_len), sizeof(uint32_t), 1, f);
 	ret += fread(&(h->symbol_size), sizeof(uint8_t), 1, f);
 	ret += fread(&filename_len, sizeof(uint32_t), 1, f);
 	
@@ -56,7 +56,7 @@ int header_read(struct header_t *h, FILE *f){
 	}
 	
 	LOG(DEBUG, "magic_num: %d, dictionary_size: %d, symbol_size: %d, filename_len: %d\n",
-		h->magic_num, h->dictionary_size, h->symbol_size, filename_len);
+		h->magic_num, h->dictionary_len, h->symbol_size, filename_len);
 	
 	return ret;
 }

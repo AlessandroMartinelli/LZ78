@@ -12,4 +12,4 @@
 /* COMP
  * compressor main function
  */
-int comp(char *filename_in, char *filename_out, uint32_t dictionary_size, uint8_t symbol_size);
+int comp(const struct gstate *state);

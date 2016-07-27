@@ -22,4 +22,4 @@ typedef struct _code_t_ {
 } code_t;
 
 int decode(code_t *array, code_t node, struct bitio* b, uint8_t symbol_size);
-int decomp(const char *filename_enc, const char *filename_dec);
+int decomp(const struct gstate *state, const char *output_file, const uint64_t f_dim);

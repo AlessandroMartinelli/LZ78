@@ -57,6 +57,12 @@ char* path_to_lz78name(char* path){
 	return lz78name;
 }	
 
+void clean_all(struct gstate* state){
+	if (state){
+		
+	}
+}
+
 int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, uint32_t dictionary_len){
 	int ret;
 	state->b_in = NULL;
@@ -66,7 +72,7 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	unsigned char checksum[MD5_DIGEST_LENGTH];	
 	
 	/* If the caller has not explicitly given a name for the output file,
-	*  here we create it, as <name_without_extension>.lz78 
+	*  here we create it, as <name_without_path_and_extension>.lz78 
 	*/			
 	output_file = (output_file == NULL)? path_to_lz78name(input_file) : output_file;
 	
@@ -79,7 +85,11 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	}
 	
 	/* Initialization of stat structure (stat_buf) */
-	stat(input_file, &stat_buf);	
+	ret = stat(input_file, &stat_buf);	
+	if (ret == -1){
+		LOG(ERROR, "Impossibile to create calculate statistics: %s", strerror(errno));	
+		return -1;	
+	}
 	
 	/* Compute checksum of input file and put it in "checksum" */
 	csum(input_file, checksum);
@@ -103,11 +113,11 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 		"\tOriginal size    = %ld\n"
 		"\tOriginal filname = %s\n"
 		"\tMAGIC number     = %d\n"
-		"\tdictionary_size  = %u\n"
+		"\tdictionary_len  = %u\n"
 		"\tsymbol_size      = %u\n"
 		"\tchecksum         = ",
 		state->header->original_size, state->header->filename,
-		state->header->magic_num, state->header->dictionary_size, 
+		state->header->magic_num, state->header->dictionary_len, 
 		state->header->symbol_size);
 		
 	/* Allocation and initialization of bitio structures */
@@ -129,6 +139,8 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 		return -1;
 		/* TODO: you know what */
 	}		
+	
+	output_file_ptr = NULL;
 	return 0;
 }
 
@@ -177,11 +189,11 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 		"\tOriginal size    = %ld\n"
 		"\tOriginal filname = %s\n"
 		"\tMAGIC number     = %d\n"
-		"\tdictionary_size  = %u\n"
+		"\tdictionary_len  = %u\n"
 		"\tsymbol_size      = %u\n"
 		"\tchecksum         = ",
 		state->header->original_size, state->header->filename,
-		state->header->magic_num, state->header->dictionary_size, state->header->symbol_size);
+		state->header->magic_num, state->header->dictionary_len, state->header->symbol_size);
 
 	/* If the caller has not explicitly given a name for the output file,
 	*  we grab it from the header we've just read 
@@ -282,7 +294,7 @@ int main (int argc, char **argv){
 		if ((flag & DECOMP_F) !=0){
 			/* In decompression mode, giving -l option has no effect */
 			LOG(WARNING, "Dictionary length given as argument in "
-				"decompressio mode is ignored");
+				"decompression mode is ignored");
 		} else {
 			aux = strtol(dictionary_len_str, NULL, 10);
 			if (aux < DICTIONARY_MIN_LEN || aux > DICTIONARY_MAX_LEN){
@@ -294,8 +306,8 @@ int main (int argc, char **argv){
 		}
 	} else {
 		/* If dictionary length has not been given, a default value is used.
-		 * If we are in decompressio mode doesn't matter, since this
-		 * value won't be used, instead it will be taken from the header 
+		 * If we are in decompression mode it doesn't matter, since this
+		 * value won't be used (it will be taken from the header).
 		 */
 		dictionary_len = DICTIONARY_DEFAULT_LEN;
 	}
@@ -313,13 +325,33 @@ int main (int argc, char **argv){
 	LOG(INFO, "Starting...");
 	
 	struct gstate state;
+	
 	if ((flag & DECOMP_F) == 0){
+		/* Compressor mode */
 		ret = comp_init_gstate(&state, input_file, output_file, dictionary_len);
+		ret = comp(&state);
+		//ret = chooser();	
 	} else {
+		/* Decompressor mode */	
 		uint64_t f_dim;
 		ret = decomp_init_gstate(&state, input_file, output_file, &f_dim);	
-	}	
-	
+		ret = decomp(&state, output_file, f_dim);
+		//ret = chooser();
+		ret = 1;
+		
+		if (ret == -1){
+			//...
+			goto end;
+		}
+		if (ret == 1){
+			//ret = decomp(state /* ... */);
+		} else {
+			//ret = simple_paste(/* ... */);
+		}
+		
+	}
+		
+	end: 
 	LOG(INFO, "Program terminated with code %d", ret);
 	return ret;
 }
