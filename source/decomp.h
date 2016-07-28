@@ -23,3 +23,4 @@ typedef struct _code_t_ {
 
 int decode(code_t *array, code_t node, struct bitio* b, uint8_t symbol_size);
 int decomp(const struct gstate *state, const char *output_file, const uint64_t f_dim);
+int fake_decomp(const struct gstate *state);

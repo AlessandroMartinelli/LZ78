@@ -183,3 +183,21 @@ int decomp(const struct gstate *state, const char *output_file, const uint64_t f
 	DECOMP_CLEAN();
 	return 0;
 }
+
+int fake_decomp(const struct gstate *state){
+	FILE* f_in = bitio_get_file(state->b_in);
+	FILE* f_out = bitio_get_file(state->b_out);
+	char buff[1024];
+	int ret = 0;
+	while((ret=fread(buff, 1024, 1, f_in))>0){
+		if((fwrite(buff, ret, 1, f_out))!=1){ 
+			errno = ENOSPC;
+			if(state->b_in != NULL) bitio_close(state->b_in);
+			if(state->b_out != NULL) bitio_close(state->b_out);
+			return -1;
+		}
+	}
+	if(state->b_in != NULL) bitio_close(state->b_in);
+	if(state->b_out != NULL) bitio_close(state->b_out);
+	return 0;
+}

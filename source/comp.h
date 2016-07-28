@@ -13,3 +13,5 @@
  * compressor main function
  */
 int comp(const struct gstate *state);
+
+int fake_comp(const struct gstate* state);

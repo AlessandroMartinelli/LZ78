@@ -17,6 +17,7 @@
 #define ANSI_COLOR_BLUE		"\x1b[34m"
 
 #define MAGIC 3
+#define NOT_MAGIC 2
 
 #define LOG(type, _fmt, ...)										\
 	do {																	\
