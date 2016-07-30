@@ -19,7 +19,7 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 
 int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file, uint64_t *f_dim);
 
-int comp_chooser(struct gstate* state);
+int comp_chooser(struct gstate* state, char* output_file);
 
 int decomp_chooser( );
 

@@ -14,4 +14,4 @@
  */
 int comp(const struct gstate *state);
 
-int fake_comp(const struct gstate* state);
+int fake_comp(const struct gstate* state, char* input_file, char* output_file);

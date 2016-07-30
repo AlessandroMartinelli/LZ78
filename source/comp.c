@@ -95,22 +95,27 @@ end:
 }
 
 
-int fake_comp(const struct gstate* state){ /* TODO: write the header and copy the file */
-	FILE* f_in = bitio_get_file(state->b_in);
-	FILE* f_out = bitio_get_file(state->b_out);
+int fake_comp(const struct gstate* state, char* input_file, char* output_file){
+/* write the header and copy the file */
+	FILE* f_in = fopen(input_file, "r");
+	FILE* f_out = fopen(output_file, "w");
+	if(f_in == NULL || f_out == NULL){
+		LOG(ERROR, "Impossible to open files: %s", strerror(errno));
+		return -1;
+	}
 	char buff[1024];
 	int ret = 0;
+	/* write header */
+	header_write(state->header, file_out);
+	
+	/* copy the file */
 	while((ret=fread(buff, 1024, 1, f_in))>0){
 		if((fwrite(buff, ret, 1, f_out))!=1){ 
 			errno = ENOSPC;
-			if(state->b_in != NULL) bitio_close(state->b_in);
-			if(state->b_out != NULL) bitio_close(state->b_out);
+			LOG(ERROR, "Impossible to write output file (%s): %s", output_file, strerror(errno));
 			return -1;
 		}
 	}
-	if(state->b_in != NULL) bitio_close(state->b_in);
-	if(state->b_out != NULL) bitio_close(state->b_out);
-	return 0;
 	
 	return 0;
 }

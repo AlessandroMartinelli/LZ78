@@ -90,7 +90,7 @@ int comp_chooser(struct gstate* state, char* output_file){
 		LOG(ERROR, "Impossible to create calculate statistics: %s", strerror(errno));
 		return -1;
 	}
-	if(state->header->original_size < stat_buf.st_size){
+	if(state->header->original_size < (uint64_t) stat_buf.st_size){
 		return 1; /* compression ineffective */
 	}
 
@@ -100,9 +100,9 @@ int comp_chooser(struct gstate* state, char* output_file){
 int decomp_chooser(struct gstate* state){
 	switch(state->header->magic_num){
 		case MAGIC:
-			return 1;
-		case NOT_MAGIC:
 			return 0;
+		case NOT_MAGIC:
+			return 1;
 		default:
 			return -1;
 	}
@@ -377,8 +377,11 @@ int main (int argc, char **argv){
 		if (ret == -1) goto end;
 		ret = comp(&state);
 		if (ret == -1) goto end;
-		ret = comp_chooser(&state);
-		if(ret == 1) fake_comp(&state, input_file, output_file);
+		ret = comp_chooser(&state, output_file);
+		if(ret == 1){
+			state.header->magic_num = NOT_MAGIC;
+			fake_comp(&state, input_file, output_file);
+		}
 		if (ret == -1) goto end;
 		
 	} else {
@@ -386,12 +389,10 @@ int main (int argc, char **argv){
 		uint64_t f_dim;
 		ret = decomp_init_gstate(&state, input_file, output_file, &f_dim);
 		if (ret == -1) goto end;		
-		ret = decomp_chooser();
-		
-		if(ret == 1){
+		ret = decomp_chooser(&state);
+		if(ret == 0){
 			ret = decomp(&state, output_file, f_dim);
-			if (ret == -1) goto end;			
-		} else if(ret == 0){
+		} else if(ret == 1){
 			ret = fake_decomp(&state);
 			if (ret == -1) goto end;			
 		} else {

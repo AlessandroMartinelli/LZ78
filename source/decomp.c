@@ -166,12 +166,9 @@ int fake_decomp(const struct gstate *state){
 	while((ret=fread(buff, 1024, 1, f_in))>0){
 		if((fwrite(buff, ret, 1, f_out))!=1){ 
 			errno = ENOSPC;
-			if(state->b_in != NULL) bitio_close(state->b_in);
-			if(state->b_out != NULL) bitio_close(state->b_out);
+			LOG(ERROR, "Impossible to write output file: %s", strerror(errno));
 			return -1;
 		}
 	}
-	if(state->b_in != NULL) bitio_close(state->b_in);
-	if(state->b_out != NULL) bitio_close(state->b_out);
 	return 0;
 }
