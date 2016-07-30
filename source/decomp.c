@@ -8,11 +8,6 @@
 
 #include "decomp.h"
 
-#define DECOMP_CLEAN()								\
-	if(state->b_in != NULL) bitio_close(state->b_in);			\
-	if(state->b_out != NULL) bitio_close(state->b_out);		\
-	header_read_free(state->header);
-
 int decode(code_t *array, code_t node, struct bitio* b, uint8_t symbol_size){
 	int ret = 0;
 	//LOG(DEBUG, "\tDecode <\"%c\", %lu>", node.character, node.parent_id);
@@ -129,31 +124,12 @@ int decomp(const struct gstate *state, const char *output_file, const uint64_t f
 			DECOMP_CLEAN();
 			return -1;
 	}		
-	//state->b_out = NULL;
-
-	/* compare file size */
-	/*
-	stat_buf = calloc(1, sizeof(struct stat));
-	if (stat_buf == NULL){
-		errno = ENOMEM;
-		LOG(ERROR, "%s", strerror(errno));
-		DECOMP_CLEAN();
-		return -1;
-	} 
-	*/
 	
 	ret = stat(output_file, &stat_buf);
 	if (ret == -1){
 		LOG(ERROR, "Impossibile to create header_t structure: %s", strerror(errno));
 		return -1;		
 	}
-	/*
-	if(stat_buf == NULL){
-		LOG(ERROR, "Cannot compute stats on %s", output_file);
-		DECOMP_CLEAN();
-		return -1;
-	}
-	*/
 	
 	if((uint64_t)stat_buf.st_size != state->header->original_size){
 		LOG(ERROR,"Original size error");
@@ -179,8 +155,6 @@ int decomp(const struct gstate *state, const char *output_file, const uint64_t f
 	} 
 	LOG(INFO, "Checksum match: OK!");
 	
-	/* Cannot use goto because of vector nodes (with variably modified type) */
-	DECOMP_CLEAN();
 	return 0;
 }
 

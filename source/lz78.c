@@ -57,10 +57,31 @@ char* path_to_lz78name(char* path){
 	return lz78name;
 }
 
-void clean_all(struct gstate* state){
+void clean_all(struct gstate* state, uint8_t flag, char* output_file){
 	if (state){
-
+		if (state->header){
+			if (state->header->filename) free(state->header->filename);
+			if (state->header->checksum) free(state->header->checksum);
+			free(state->header);
+		}
+		if (state->b_in) bitio_close(state->b_in);
+		if (state->b_out) bitio_close(state->b_out);
 	}
+	
+	/* The input file is always explicitly given, so there is no need
+	 * for explicitly freeing it. About the output_file:
+	 * If the output_file name has been explicitly given, there is no need
+	 * to manually free it. Even though that is not the case, if we are in 
+	 * decompression mode the output_file name has been allocated in the
+	 * header_read, so it will be deallocated when the gstate structure
+	 * will be deallocated. So, we must explicitly free it only in the
+	 * remaining following situation:
+	 */
+	if ((flag & OUTPUT_F) == 0){
+		if ((flag & DECOMP_F) == 0){
+			free(output_file);
+		}
+	}		
 }
 
 int comp_chooser(struct gstate* state, char* output_file){
@@ -353,25 +374,34 @@ int main (int argc, char **argv){
 	if ((flag & DECOMP_F) == 0){
 		/* Compressor mode */
 		ret = comp_init_gstate(&state, input_file, output_file, dictionary_len);
+		if (ret == -1) goto end;
 		ret = comp(&state);
+		if (ret == -1) goto end;
 		ret = comp_chooser(&state);
 		if(ret == 1) fake_comp(&state, input_file, output_file);
+		if (ret == -1) goto end;
 		
 	} else {
 		/* Decompressor mode */
 		uint64_t f_dim;
 		ret = decomp_init_gstate(&state, input_file, output_file, &f_dim);
+		if (ret == -1) goto end;		
 		ret = decomp_chooser();
+		
 		if(ret == 1){
 			ret = decomp(&state, output_file, f_dim);
+			if (ret == -1) goto end;			
 		} else if(ret == 0){
 			ret = fake_decomp(&state);
+			if (ret == -1) goto end;			
 		} else {
 			LOG(ERROR, "This file is not valid for the decompression");
 		}
 	}
 
 	end:
+	clean_all(&state, flag, output_file);
+	
 	LOG(INFO, "Program terminated with code %d", ret);
 	return ret;
 }

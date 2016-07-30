@@ -88,10 +88,9 @@ int comp(const struct gstate *state){
 	}
 	LOG(INFO,"Compression terminated");
 	ret = 0;
+	
 end:
 	if(h_table!=NULL) free_table(h_table);
-	if(state->b_in != NULL) bitio_close(state->b_in);
-	if(state->b_out != NULL) bitio_close(state->b_out);
 	return ret;
 }
 
