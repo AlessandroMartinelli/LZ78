@@ -57,21 +57,27 @@ char* path_to_lz78name(char* path){
 	return lz78name;
 }
 
-void clean_all(struct gstate* state, uint8_t flag, char* output_file){
-	if (state){
-		if (state->header){
-			if (state->header->filename) free(state->header->filename);
-			if (state->header->checksum) free(state->header->checksum);
+void clean_bitio(struct gstate* state){
+	if(state){
+		if(state->b_in) bitio_close(state->b_in);
+		if(state->b_out) bitio_close(state->b_out);
+	}
+}
+
+void clean_state(struct gstate* state, uint8_t flag, char* output_file){
+	if(state){
+		if(state->header){
+			if(state->header->filename) free(state->header->filename);
+			if(state->header->checksum) free(state->header->checksum);
 			free(state->header);
 		}
-		if (state->b_in) bitio_close(state->b_in);
-		if (state->b_out) bitio_close(state->b_out);
+		clean_bitio(state);
 	}
 	
 	/* The input file is always explicitly given, so there is no need
 	 * for explicitly freeing it. About the output_file:
 	 * If the output_file name has been explicitly given, there is no need
-	 * to manually free it. Even though that is not the case, if we are in 
+	 * to manually free it. Even though that is not the case, if we are in
 	 * decompression mode the output_file name has been allocated in the
 	 * header_read, so it will be deallocated when the gstate structure
 	 * will be deallocated. So, we must explicitly free it only in the
@@ -81,13 +87,13 @@ void clean_all(struct gstate* state, uint8_t flag, char* output_file){
 		if ((flag & DECOMP_F) == 0){
 			free(output_file);
 		}
-	}		
+	}
 }
 
 int comp_chooser(struct gstate* state, char* output_file){
 	struct stat stat_buf;
 	if (stat(output_file, &stat_buf) == -1){
-		LOG(ERROR, "Impossible to create calculate statistics: %s", strerror(errno));
+		LOG(ERROR, "Impossible to compute statistics: %s", strerror(errno));
 		return -1;
 	}
 	if(state->header->original_size < (uint64_t) stat_buf.st_size){
@@ -100,10 +106,11 @@ int comp_chooser(struct gstate* state, char* output_file){
 int decomp_chooser(struct gstate* state){
 	switch(state->header->magic_num){
 		case MAGIC:
-			return 0;
+			return 0; /* plain compression */
 		case NOT_MAGIC:
-			return 1;
+			return 1; /* fake compression */
 		default:
+			LOG(ERROR, "This file is not valid for the decompression");
 			return -1;
 	}
 }
@@ -377,31 +384,38 @@ int main (int argc, char **argv){
 		if (ret == -1) goto end;
 		ret = comp(&state);
 		if (ret == -1) goto end;
+		clean_bitio(&state);
 		ret = comp_chooser(&state, output_file);
 		if(ret == 1){
 			state.header->magic_num = NOT_MAGIC;
 			fake_comp(&state, input_file, output_file);
 		}
-		if (ret == -1) goto end;
+		/*
+		if (ret == -1){
+			//LOG printed in comp_chooser
+			//goto end; // nothing to do befor "end" 
+		}
+		*/
 		
 	} else {
 		/* Decompressor mode */
 		uint64_t f_dim;
 		ret = decomp_init_gstate(&state, input_file, output_file, &f_dim);
-		if (ret == -1) goto end;		
+		if (ret == -1) goto end;
 		ret = decomp_chooser(&state);
 		if(ret == 0){
 			ret = decomp(&state, output_file, f_dim);
 		} else if(ret == 1){
 			ret = fake_decomp(&state);
-			if (ret == -1) goto end;			
-		} else {
-			LOG(ERROR, "This file is not valid for the decompression");
-		}
+			//if (ret == -1) goto end;
+		}/* else {
+			//LOG printed in decomp_chooser
+		}*/
+		//goto end; // nothing to do befor "end"
 	}
 
-	end:
-	clean_all(&state, flag, output_file);
+end:
+	clean_state(&state, flag, output_file);
 	
 	LOG(INFO, "Program terminated with code %d", ret);
 	return ret;

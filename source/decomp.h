@@ -1,12 +1,12 @@
 /* decomp.h
- * 
+ *
  * Description----------------------------------------------------------
  * Declaration of the structure the will handles the decompression
  * process.
  * To manage the compressed file a (character,parent_id) table is
  * suggested.
  * ---------------------------------------------------------------------
- * 
+ *
  */
 #include <sys/stat.h>		/* stat */
 #include <unistd.h>			/* stat */

@@ -41,7 +41,6 @@ int decomp(const struct gstate *state, const char *output_file, const uint64_t f
 
 	if(state->header->magic_num != MAGIC){
 		LOG(ERROR,"Wrong decompression/wrong file");
-		DECOMP_CLEAN();
 		return -1;
 	}
 	
@@ -77,7 +76,6 @@ int decomp(const struct gstate *state, const char *output_file, const uint64_t f
 		ret_symbol = bitio_read(state->b_in, symbol_size, &aux_64);
 		if (ret_symbol < 0){
 			LOG(ERROR, "Read failed: %s", strerror(errno));
-			DECOMP_CLEAN();
 			return -1;
 		}
 		
@@ -85,7 +83,6 @@ int decomp(const struct gstate *state, const char *output_file, const uint64_t f
 		ret_id = bitio_read(state->b_in, id_size, &aux_64);
 		if (ret_id < 0){
 			LOG(ERROR, "Read failed: %s", strerror(errno));
-			DECOMP_CLEAN();
 			return -1;
 		}		
 		
@@ -98,7 +95,6 @@ int decomp(const struct gstate *state, const char *output_file, const uint64_t f
 			ret = decode(nodes, nodes[i%dictionary_len], state->b_out, symbol_size);
 			if (ret < 0){
 				LOG(ERROR, "Decode failed: %s", strerror(errno));
-				DECOMP_CLEAN();
 				return -1;
 			}				
 		}
@@ -112,7 +108,6 @@ int decomp(const struct gstate *state, const char *output_file, const uint64_t f
 			if (ret < 0){
 				LOG(ERROR, "Decode failed: %s", strerror(errno));
 			}
-			DECOMP_CLEAN();
 			return -1;
 		}
 	}
@@ -121,7 +116,6 @@ int decomp(const struct gstate *state, const char *output_file, const uint64_t f
 	ret = bitio_close(state->b_out);
 	if (ret < 0){
 			LOG(ERROR, "Close failed: %s", strerror(errno));
-			DECOMP_CLEAN();
 			return -1;
 	}		
 	
@@ -133,7 +127,6 @@ int decomp(const struct gstate *state, const char *output_file, const uint64_t f
 	
 	if((uint64_t)stat_buf.st_size != state->header->original_size){
 		LOG(ERROR,"Original size error");
-		DECOMP_CLEAN();
 		return -1;
 	}
 	LOG(INFO, "Size match: OK!");
@@ -142,7 +135,6 @@ int decomp(const struct gstate *state, const char *output_file, const uint64_t f
 	csum(output_file, checksum);
 	if (checksum == NULL){
 		LOG(ERROR, "Checksum calculation failed: %s", strerror(errno));
-		DECOMP_CLEAN();
 		return -1;
 	}		
 	LOG_BYTES(DEBUG, state->header->checksum, MD5_DIGEST_LENGTH, "Received checksum: ");
@@ -150,7 +142,6 @@ int decomp(const struct gstate *state, const char *output_file, const uint64_t f
 	
 	if(memcmp((char*)checksum, (char*)state->header->checksum,MD5_DIGEST_LENGTH) != 0){
 		LOG(ERROR, "Checksum error: received and calculated checksum don't match");
-		DECOMP_CLEAN();
 		return -1;		
 	} 
 	LOG(INFO, "Checksum match: OK!");

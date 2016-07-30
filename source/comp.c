@@ -106,7 +106,7 @@ int fake_comp(const struct gstate* state, char* input_file, char* output_file){
 	char buff[1024];
 	int ret = 0;
 	/* write header */
-	header_write(state->header, file_out);
+	header_write(state->header, f_in);
 	
 	/* copy the file */
 	while((ret=fread(buff, 1024, 1, f_in))>0){
