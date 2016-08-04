@@ -34,7 +34,8 @@ void usage(){
 }
 
 char* path_to_lz78name(char* path){
-	char base_name[sizeof(basename(path))+1] = "\0"; /* name without path */
+	//char base_name[sizeof(basename(path))+1] = "\0"; /* name without path */
+	char *base_name;
 	char *dot_ptr = NULL;	/* pointer at last dot inside a filename */
 	char *lz78name = NULL;	/* this one will store the resulting string */
 	uint8_t dot_index = 0;	/* position of the last dot inside ta filename */
@@ -42,7 +43,7 @@ char* path_to_lz78name(char* path){
 	/* Extract the name without path and discover
 	 * the position of the last dot inside the filename
 	 */
-	strcpy(base_name, basename(path));
+	base_name = basename(path);
 	dot_ptr = strrchr(base_name, '.');
 	dot_index = (uint8_t)(dot_ptr - base_name);
 
@@ -122,11 +123,6 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	FILE* output_file_ptr = NULL;
 	struct stat stat_buf;
 	unsigned char checksum[MD5_DIGEST_LENGTH];
-
-	/* If the caller has not explicitly given a name for the output file,
-	*  here we create it, as <name_without_path_and_extension>.lz78
-	*/
-	output_file = (output_file == NULL)? path_to_lz78name(input_file) : output_file;
 
 	/* Allocation of header_t structure */
 	state->header = calloc(1, sizeof(struct header_t));
@@ -250,10 +246,10 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 	/* If the caller has not explicitly given a name for the output file,
 	*  we grab it from the header we've just read
 	*/
-	output_file = (output_file == NULL)? state->header->filename : output_file;
+	state->header->filename = (output_file == NULL)? state->header->filename : output_file;
 
 	/* Allocation and initialization of output bitio structure */
-	state->b_out = bitio_open(output_file, WRITE);
+	state->b_out = bitio_open(state->header->filename, WRITE);
 	if(state->b_out == NULL){
 		LOG(ERROR, "Impossible to allocate bitio structure: %s", strerror(errno));
 		return -1;
@@ -380,6 +376,12 @@ int main (int argc, char **argv){
 
 	if ((flag & DECOMP_F) == 0){
 		/* Compressor mode */
+
+		/* If the caller has not explicitly given a name for the output file,
+		 *  here we create it, as <name_without_path_and_extension>.lz78
+		 */
+		output_file = (output_file == NULL) ? path_to_lz78name(input_file) : output_file;
+		
 		ret = comp_init_gstate(&state, input_file, output_file, dictionary_len);
 		if (ret == -1) goto end;
 		ret = comp(&state);
@@ -387,6 +389,7 @@ int main (int argc, char **argv){
 		clean_bitio(&state);
 		ret = comp_chooser(&state, output_file);
 		if(ret == 1){
+			LOG(DEBUG, "Compressed file was bigger than original.. just bypassing compression");
 			state.header->magic_num = NOT_MAGIC;
 			fake_comp(&state, input_file, output_file);
 		}
@@ -404,7 +407,7 @@ int main (int argc, char **argv){
 		if (ret == -1) goto end;
 		ret = decomp_chooser(&state);
 		if(ret == 0){
-			ret = decomp(&state, output_file, f_dim);
+			ret = decomp(&state, f_dim);
 		} else if(ret == 1){
 			ret = fake_decomp(&state);
 			//if (ret == -1) goto end;

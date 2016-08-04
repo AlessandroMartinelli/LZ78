@@ -23,7 +23,7 @@ int decode(code_t *array, code_t node, struct bitio* b, uint8_t symbol_size){
 	return 0;
 }
 
-int decomp(const struct gstate *state, const char *output_file, const uint64_t f_dim){
+int decomp(const struct gstate *state, const uint64_t f_dim){
 	int ret_symbol;
 	int ret_id;
 	int ret = 0;
@@ -35,6 +35,7 @@ int decomp(const struct gstate *state, const char *output_file, const uint64_t f
 	uint8_t symbol_size;
 	uint16_t id_size;
 	uint64_t i;
+	char* output_file;
 	unsigned char checksum[MD5_DIGEST_LENGTH];
 	FILE* input_file_ptr = NULL;
 	struct stat stat_buf;
@@ -43,14 +44,14 @@ int decomp(const struct gstate *state, const char *output_file, const uint64_t f
 		LOG(ERROR,"Wrong decompression/wrong file");
 		return -1;
 	}
+
+	output_file = state->header->filename;
 	
 	dictionary_len = state->header->dictionary_len;
 	id_size = ceil_log2(dictionary_len); /* log base 2 */
 	symbol_size = state->header->symbol_size;
 	LOG(DEBUG, "Check values read:\n\tdictionary_len: %u\n\tid_size: %d\n\tsymbol_size: %d", dictionary_len, id_size, symbol_size);
 	//---)
-	
-	output_file = (output_file == NULL) ? state->header->filename : output_file;
 	
 	/* TODO: here we could put the calculation of f_dim, as of now
 	 * performed in decomp_init_gstate().
@@ -154,12 +155,15 @@ int fake_decomp(const struct gstate *state){
 	FILE* f_out = bitio_get_file(state->b_out);
 	char buff[1024];
 	int ret = 0;
-	while((ret=fread(buff, 1024, 1, f_in))>0){
-		if((fwrite(buff, ret, 1, f_out))!=1){ 
+	while((ret=fread(buff, 1, 1024, f_in))>0){
+		if((fwrite(buff, 1, ret, f_out))!=ret){ 
 			errno = ENOSPC;
 			LOG(ERROR, "Impossible to write output file: %s", strerror(errno));
 			return -1;
 		}
 	}
+
+	fclose(f_in);
+	fclose(f_out);
 	return 0;
 }

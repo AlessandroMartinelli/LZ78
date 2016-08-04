@@ -104,18 +104,20 @@ int fake_comp(const struct gstate* state, char* input_file, char* output_file){
 		return -1;
 	}
 	char buff[1024];
-	int ret = 0;
+	unsigned int ret = 0;
 	/* write header */
-	header_write(state->header, f_in);
+	header_write(state->header, f_out);
 	
 	/* copy the file */
-	while((ret=fread(buff, 1024, 1, f_in))>0){
-		if((fwrite(buff, ret, 1, f_out))!=1){ 
+	while((ret=fread(buff, 1, 1024, f_in))>0){
+		if((fwrite(buff, 1, ret, f_out))!=ret){ 
 			errno = ENOSPC;
 			LOG(ERROR, "Impossible to write output file (%s): %s", output_file, strerror(errno));
 			return -1;
 		}
 	}
+	fclose(f_in);
+	fclose(f_out);
 	
 	return 0;
 }
