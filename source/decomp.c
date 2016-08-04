@@ -35,17 +35,12 @@ int decomp(const struct gstate *state, const uint64_t f_dim){
 	uint8_t symbol_size;
 	uint16_t id_size;
 	uint64_t i;
-	char* output_file;
-	unsigned char checksum[MD5_DIGEST_LENGTH];
 	FILE* input_file_ptr = NULL;
-	struct stat stat_buf;
 
 	if(state->header->magic_num != MAGIC){
 		LOG(ERROR,"Wrong decompression/wrong file");
 		return -1;
 	}
-
-	output_file = state->header->filename;
 	
 	dictionary_len = state->header->dictionary_len;
 	id_size = ceil_log2(dictionary_len); /* log base 2 */
@@ -112,13 +107,22 @@ int decomp(const struct gstate *state, const uint64_t f_dim){
 			return -1;
 		}
 	}
-	
-	/* flush bitio buffer*/
-	ret = bitio_close(state->b_out);
+
+	/* flush bitio buffer */
+	/*ret = bitio_close(state->b_out);
+	state->b_out = NULL;
 	if (ret < 0){
 			LOG(ERROR, "Close failed: %s", strerror(errno));
 			return -1;
-	}		
+	}*/
+	
+	return 0;
+}
+
+int decomp_check(const struct gstate *state, char *output_file){
+	int ret;
+	struct stat stat_buf;	
+	unsigned char checksum[MD5_DIGEST_LENGTH];	
 	
 	ret = stat(output_file, &stat_buf);
 	if (ret == -1){
@@ -146,7 +150,7 @@ int decomp(const struct gstate *state, const uint64_t f_dim){
 		return -1;		
 	} 
 	LOG(INFO, "Checksum match: OK!");
-	
+
 	return 0;
 }
 
@@ -154,7 +158,7 @@ int fake_decomp(const struct gstate *state){
 	FILE* f_in = bitio_get_file(state->b_in);
 	FILE* f_out = bitio_get_file(state->b_out);
 	char buff[1024];
-	int ret = 0;
+	unsigned int ret = 0;
 	while((ret=fread(buff, 1, 1024, f_in))>0){
 		if((fwrite(buff, 1, ret, f_out))!=ret){ 
 			errno = ENOSPC;
@@ -163,7 +167,5 @@ int fake_decomp(const struct gstate *state){
 		}
 	}
 
-	fclose(f_in);
-	fclose(f_out);
 	return 0;
 }

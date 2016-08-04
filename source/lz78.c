@@ -62,15 +62,18 @@ void clean_bitio(struct gstate* state){
 	if(state){
 		if(state->b_in) bitio_close(state->b_in);
 		if(state->b_out) bitio_close(state->b_out);
+		state->b_in = NULL;
+		state->b_out = NULL;
 	}
 }
 
-void clean_state(struct gstate* state, uint8_t flag, char* output_file){
+void clean_state(struct gstate* state){
 	if(state){
 		if(state->header){
-			if(state->header->filename) free(state->header->filename);
-			if(state->header->checksum) free(state->header->checksum);
+			//if(state->header->filename) free(state->header->filename);
+			//if(state->header->checksum) free(state->header->checksum);
 			free(state->header);
+			state->header = NULL;
 		}
 		clean_bitio(state);
 	}
@@ -84,11 +87,11 @@ void clean_state(struct gstate* state, uint8_t flag, char* output_file){
 	 * will be deallocated. So, we must explicitly free it only in the
 	 * remaining following situation:
 	 */
-	if ((flag & OUTPUT_F) == 0){
+	/*if ((flag & OUTPUT_F) == 0){
 		if ((flag & DECOMP_F) == 0){
 			free(output_file);
 		}
-	}
+	}*/
 }
 
 int comp_chooser(struct gstate* state, char* output_file){
@@ -414,11 +417,15 @@ int main (int argc, char **argv){
 		}/* else {
 			//LOG printed in decomp_chooser
 		}*/
+
+		clean_bitio(&state);
+		ret = decomp_check(&state, output_file);
+
 		//goto end; // nothing to do befor "end"
 	}
 
 end:
-	clean_state(&state, flag, output_file);
+	clean_state(&state);
 	
 	LOG(INFO, "Program terminated with code %d", ret);
 	return ret;
