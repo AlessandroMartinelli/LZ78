@@ -119,12 +119,12 @@ int decomp(const struct gstate *state, const uint64_t f_dim){
 	return 0;
 }
 
-int decomp_check(const struct gstate *state, char *output_file){
+int decomp_check(const struct gstate *state){
 	int ret;
 	struct stat stat_buf;	
 	unsigned char checksum[MD5_DIGEST_LENGTH];	
 	
-	ret = stat(output_file, &stat_buf);
+	ret = stat(state->header->filename, &stat_buf);
 	if (ret == -1){
 		LOG(ERROR, "Impossibile to create header_t structure: %s", strerror(errno));
 		return -1;		
@@ -137,7 +137,7 @@ int decomp_check(const struct gstate *state, char *output_file){
 	LOG(INFO, "Size match: OK!");
 	
 	/* compare checksum */
-	csum(output_file, checksum);
+	csum(state->header->filename, checksum);
 	if (checksum == NULL){
 		LOG(ERROR, "Checksum calculation failed: %s", strerror(errno));
 		return -1;

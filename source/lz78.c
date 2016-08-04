@@ -419,7 +419,7 @@ int main (int argc, char **argv){
 		}*/
 
 		clean_bitio(&state);
-		ret = decomp_check(&state, output_file);
+		ret = decomp_check(&state);
 
 		//goto end; // nothing to do befor "end"
 	}
