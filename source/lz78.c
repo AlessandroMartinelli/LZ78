@@ -72,6 +72,7 @@ void clean_state(struct gstate* state){
 		if(state->header){
 			//if(state->header->filename) free(state->header->filename);
 			//if(state->header->checksum) free(state->header->checksum);
+			free(state->header->checksum);
 			free(state->header);
 			state->header = NULL;
 		}
@@ -101,17 +102,21 @@ int comp_chooser(struct gstate* state, char* output_file){
 		return -1;
 	}
 	if(state->header->original_size < (uint64_t) stat_buf.st_size){
+		LOG(DEBUG,"Plain compression failed. Proceeding with fake compression!");
 		return 1; /* compression ineffective */
 	}
-
+	
+	LOG(DEBUG,"Plain compression worked well!");
 	return 0; /* file compressed properly */
 }
 
 int decomp_chooser(struct gstate* state){
 	switch(state->header->magic_num){
 		case MAGIC:
+			LOG(DEBUG,"Plain decompression!");
 			return 0; /* plain compression */
 		case NOT_MAGIC:
+			LOG(DEBUG,"Fake decompression!");
 			return 1; /* fake compression */
 		default:
 			LOG(ERROR, "This file is not valid for the decompression");
@@ -125,7 +130,7 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	state->b_out = NULL;
 	FILE* output_file_ptr = NULL;
 	struct stat stat_buf;
-	unsigned char checksum[MD5_DIGEST_LENGTH];
+	unsigned char* checksum;
 
 	/* Allocation of header_t structure */
 	state->header = calloc(1, sizeof(struct header_t));
@@ -143,6 +148,7 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	}
 
 	/* Compute checksum of input file and put it in "checksum" */
+	checksum = (unsigned char*)calloc(1, MD5_DIGEST_LENGTH);
 	csum(input_file, checksum);
 	if (checksum == NULL){
 		LOG(ERROR, "Impossible to calculate csum: %s", strerror(errno));
@@ -170,7 +176,7 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 		state->header->original_size, state->header->filename,
 		state->header->magic_num, state->header->dictionary_len,
 		state->header->symbol_size);
-
+	
 	/* Allocation and initialization of bitio structures */
 	state->b_in = bitio_open(input_file, READ);
 	state->b_out = bitio_open(output_file, WRITE);
@@ -190,6 +196,7 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 		return -1;
 		/* TODO: you know what */
 	}
+	LOG_BYTES(DEBUG, state->header->checksum, MD5_DIGEST_LENGTH, "checksum: "); //1
 
 	output_file_ptr = NULL;
 	return 0;
@@ -392,11 +399,10 @@ int main (int argc, char **argv){
 		clean_bitio(&state);
 		ret = comp_chooser(&state, output_file);
 		if(ret == 1){
-			LOG(DEBUG, "Compressed file was bigger than original.. just bypassing compression");
 			state.header->magic_num = NOT_MAGIC;
 			fake_comp(&state, input_file, output_file);
 		}
-		/*
+		/* Useless if
 		if (ret == -1){
 			//LOG printed in comp_chooser
 			//goto end; // nothing to do befor "end" 
@@ -414,7 +420,8 @@ int main (int argc, char **argv){
 		} else if(ret == 1){
 			ret = fake_decomp(&state);
 			//if (ret == -1) goto end;
-		}/* else {
+		}/* Useless else
+		else {
 			//LOG printed in decomp_chooser
 		}*/
 
