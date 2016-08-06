@@ -15,7 +15,7 @@
 #define VERB_F		0x40	/* verbose flag */
 #define HELP_F		0x20	/* help flag */
 #define DIC_LEN_F	0x10	/* length of dictionary flag */
-#define INPUT_F		0x08	/* input file flag */
+#define INPUT_F	0x08	/* input file flag */
 #define OUTPUT_F	0x04	/* output file flag */
 #define MMA_F		0x02	/* missing mandatory argument flag */
 #define IU_F		0x01	/* incorrect usage flag */
@@ -34,7 +34,6 @@ void usage(){
 }
 
 char* path_to_lz78name(char* path){
-	//char base_name[sizeof(basename(path))+1] = "\0"; /* name without path */
 	char *base_name;
 	char *dot_ptr = NULL;	/* pointer at last dot inside a filename */
 	char *lz78name = NULL;	/* this one will store the resulting string */
@@ -70,14 +69,16 @@ void clean_bitio(struct gstate* state){
 void clean_state(struct gstate* state){
 	if(state){
 		if(state->header){
-			//if(state->header->filename) free(state->header->filename);
-			//if(state->header->checksum) free(state->header->checksum);
-			free(state->header->checksum);
+			if(state->header->filename) free(state->header->filename);
+			if(state->header->checksum) free(state->header->checksum);
+			state->header->filename = NULL;
+			state->header->checksum = NULL;
 			free(state->header);
 			state->header = NULL;
 		}
 		clean_bitio(state);
 	}
+	state = NULL;
 	
 	/* The input file is always explicitly given, so there is no need
 	 * for explicitly freeing it. About the output_file:
@@ -125,11 +126,12 @@ int decomp_chooser(struct gstate* state){
 }
 
 int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, uint32_t dictionary_len){
-	int ret;
+	int ret, name_len;
 	state->b_in = NULL;
 	state->b_out = NULL;
 	FILE* output_file_ptr = NULL;
 	struct stat stat_buf;
+	char* bname = NULL;
 	unsigned char* checksum;
 
 	/* Allocation of header_t structure */
@@ -149,19 +151,29 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 
 	/* Compute checksum of input file and put it in "checksum" */
 	checksum = (unsigned char*)calloc(1, MD5_DIGEST_LENGTH);
-	csum(input_file, checksum);
 	if (checksum == NULL){
-		LOG(ERROR, "Impossible to calculate csum: %s", strerror(errno));
+		errno = ENOMEM;
+		LOG(ERROR, "Impossible to allocate the checksum: %s", strerror(errno));
 		ret = -1;
 	}
+	csum(input_file, checksum);
+	if (checksum == NULL){
+		LOG(ERROR, "Impossible to compute checksum: %s", strerror(errno));
+		ret = -1;
+	}
+	
+	/* Copy original filename into the heap */
+	name_len = strlen(basename(input_file));
+	bname = calloc(name_len+1, sizeof(char));
+	strncpy(bname, basename(input_file), name_len);
 
 	/* Filling of header_t structure */
 	*(state->header) = (struct header_t){
 		stat_buf.st_size,			/* original_size */
-		basename(input_file), 		/* input file name */
+		bname, 						/* input file name */
 		checksum,					/* checksum */
 		MAGIC,						/* magic number */
-		dictionary_len,				/* dictionary_size */
+		dictionary_len,			/* dictionary_size */
 		SYMBOL_SIZE					/* symbol_size */
 	};
 
@@ -183,7 +195,6 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	if(state->b_out == NULL || state->b_in == NULL){
 		LOG(ERROR, "Impossible to allocate bitio structure: %s", strerror(errno));
 		return -1;
-		/*TODO: handle free of bitio */
 	}
 
 	/* Writing of the header at the beginning of the file
@@ -194,9 +205,7 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	if(ret < 0){
 		LOG(ERROR, "Header write failed: %s", strerror(errno));
 		return -1;
-		/* TODO: you know what */
 	}
-	LOG_BYTES(DEBUG, state->header->checksum, MD5_DIGEST_LENGTH, "checksum: "); //1
 
 	output_file_ptr = NULL;
 	return 0;
@@ -221,7 +230,6 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 	if(state->b_in == NULL){
 		LOG(ERROR, "Impossible to allocate bitio structure: %s", strerror(errno));
 		return -1;
-		/*TODO: handle free of bitio */
 	}
 
 	/* We take the input file pointer from the bitio read structure,
@@ -239,7 +247,6 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 	ret = header_read(state->header, input_file_ptr);
 	if (ret < 0){
 		LOG(ERROR, "Header read failed: %s", strerror(errno));
-		/* TODO: clean */
 		return -1;
 	}
 
@@ -256,14 +263,13 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 	/* If the caller has not explicitly given a name for the output file,
 	*  we grab it from the header we've just read
 	*/
-	state->header->filename = (output_file == NULL)? state->header->filename : output_file;
+	output_file = (output_file == NULL)? state->header->filename : output_file;
 
 	/* Allocation and initialization of output bitio structure */
-	state->b_out = bitio_open(state->header->filename, WRITE);
+	state->b_out = bitio_open(output_file, WRITE);
 	if(state->b_out == NULL){
 		LOG(ERROR, "Impossible to allocate bitio structure: %s", strerror(errno));
 		return -1;
-		/*TODO: handle free of bitio */
 	}
 
 	return 0;
@@ -380,55 +386,45 @@ int main (int argc, char **argv){
 			((flag & OUTPUT_F) != 0)? "\n\tOutput file      = " : "",
 			((flag & OUTPUT_F) != 0)? output_file : "");
 	}
+	
+	
 	LOG(INFO, "Starting...");
-
 	struct gstate state;
 
-	if ((flag & DECOMP_F) == 0){
-		/* Compressor mode */
-
+	if ((flag & DECOMP_F) == 0){ /* Compressor mode */
 		/* If the caller has not explicitly given a name for the output file,
 		 *  here we create it, as <name_without_path_and_extension>.lz78
 		 */
-		output_file = (output_file == NULL) ? path_to_lz78name(input_file) : output_file;
+		output_file = (output_file == NULL) ?
+			path_to_lz78name(input_file) : output_file;
 		
 		ret = comp_init_gstate(&state, input_file, output_file, dictionary_len);
 		if (ret == -1) goto end;
+		
 		ret = comp(&state);
 		if (ret == -1) goto end;
+		
 		clean_bitio(&state);
 		ret = comp_chooser(&state, output_file);
 		if(ret == 1){
 			state.header->magic_num = NOT_MAGIC;
 			fake_comp(&state, input_file, output_file);
 		}
-		/* Useless if
-		if (ret == -1){
-			//LOG printed in comp_chooser
-			//goto end; // nothing to do befor "end" 
-		}
-		*/
 		
-	} else {
-		/* Decompressor mode */
+	} else { /* Decompressor mode */
 		uint64_t f_dim;
 		ret = decomp_init_gstate(&state, input_file, output_file, &f_dim);
 		if (ret == -1) goto end;
+		
 		ret = decomp_chooser(&state);
 		if(ret == 0){
 			ret = decomp(&state, f_dim);
 		} else if(ret == 1){
 			ret = fake_decomp(&state);
-			//if (ret == -1) goto end;
-		}/* Useless else
-		else {
-			//LOG printed in decomp_chooser
-		}*/
-
+		}
+		
 		clean_bitio(&state);
 		ret = decomp_check(&state);
-
-		//goto end; // nothing to do befor "end"
 	}
 
 end:

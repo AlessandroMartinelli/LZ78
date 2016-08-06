@@ -11,7 +11,7 @@ int comp(const struct gstate *state){
 	uint8_t id_size;
 	uint32_t dictionary_len;
 	uint8_t symbol_size;
-		
+	
 	/* initialization of the hash table (tree abstraction) 
 	 * and other variables 
 	 */
@@ -86,6 +86,7 @@ int comp(const struct gstate *state){
 			goto end;
 		}			
 	}
+	
 	LOG(INFO,"Compression terminated");
 	ret = 0;
 	

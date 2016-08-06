@@ -141,9 +141,9 @@ int decomp_check(const struct gstate *state){
 	if (checksum == NULL){
 		LOG(ERROR, "Checksum calculation failed: %s", strerror(errno));
 		return -1;
-	}		
+	}
 	LOG_BYTES(DEBUG, state->header->checksum, MD5_DIGEST_LENGTH, "Received checksum: ");
-	LOG_BYTES(DEBUG, checksum, MD5_DIGEST_LENGTH, "Calculated checksum: ");			
+	LOG_BYTES(DEBUG, checksum, MD5_DIGEST_LENGTH, "Computed checksum: ");			
 	
 	if(memcmp((char*)checksum, (char*)state->header->checksum,MD5_DIGEST_LENGTH) != 0){
 		LOG(ERROR, "Checksum error: received and calculated checksum don't match");

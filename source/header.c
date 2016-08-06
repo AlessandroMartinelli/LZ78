@@ -33,7 +33,7 @@ int header_read(struct header_t *h, FILE *f){
 		return -1;
 	}
 	
-	h->filename = (char*)calloc(1, filename_len + 1);
+	h->filename = calloc(filename_len + 1, sizeof(char));
 	if (h->filename == NULL){
 		errno = ENOMEM;
 		return -1;
@@ -54,15 +54,6 @@ int header_read(struct header_t *h, FILE *f){
 		header_read_free(h);
 		return -1;	
 	}
-	
-	LOG_BYTES(INFO, h->checksum, MD5_DIGEST_LENGTH, "The header structure has been read in the following way:\n"
-		"\tOriginal size    = %ld\n"
-		"\tOriginal filname = %s\n"
-		"\tMAGIC number     = %d\n"
-		"\tdictionary_len  = %u\n"
-		"\tsymbol_size      = %u\n"
-		"\tchecksum         = ",
-		h->original_size, h->filename, h->magic_num, h->dictionary_len, h->symbol_size);
 	
 	return ret;
 }
