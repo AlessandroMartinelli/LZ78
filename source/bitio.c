@@ -7,10 +7,13 @@
 #include "bitio.h"
 
 int bitio_flush(struct bitio *b){
-	if(b->mode == WRITE && b-> wp > 0){
+	if(b->mode == WRITE && b->wp > 0){
 	/* If e.g there is still 1 bit to write, it writes 1 byte; if there are
 	*  9 bit to write, it writes 2 bytes. And so on.
 	*/
+		#if __BYTE_ORDER == __BIG_ENDIAN
+		b->data = htole64(b->data);
+		#endif
 		if((fwrite((void*)&b->data, (b->wp+7)/8, 1, b->f))!=1){ 
 			errno = ENOSPC;
 			return -1;
@@ -84,6 +87,9 @@ int bitio_write(struct bitio *b, uint8_t size, uint64_t data){
 		*  and finally write the remaining bytes.
 		*/
 		b->data |= (data & ((1UL << space)-1)) << b->wp;
+		#if __BYTE_ORDER == __BIG_ENDIAN
+		b->data = htole64(b->data);
+		#endif
 		if(fwrite(&(b->data), 8, 1, b->f)!=1){
 			/* It is not possible to recover from a write error, therefore
 			*  the caller must close the program in this case 
@@ -128,6 +134,9 @@ int bitio_read(struct bitio* b, uint8_t size, uint64_t* data){
 		*/
 		*data = (b->data >> b->rp) & ((1UL << space)-1);
 		int ret = fread(&(b->data), 1, 8, b->f);
+		#if __BYTE_ORDER == __BIG_ENDIAN
+		b->data = le64toh(b->data);
+		#endif
 		if (ret < 0){
 			errno = ENODATA;
 			return -1;

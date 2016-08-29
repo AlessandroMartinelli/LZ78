@@ -58,7 +58,7 @@ int decomp(const struct gstate *state, const uint64_t f_dim){
 	num_of_codes *= 8; // bytes to bits
 	num_of_codes /= symbol_size+id_size;	/* normalize the number of array
 														 * elements by the code dimension*/
-	LOG(INFO,"num_of_codes: %lu", num_of_codes);
+	LOG(INFO,"num_of_codes: %llu", num_of_codes);
 	
 	/* the dictionary is cleaned every dictionary_len codes */
 	size = (num_of_codes <= dictionary_len)? num_of_codes : dictionary_len;
@@ -85,7 +85,7 @@ int decomp(const struct gstate *state, const uint64_t f_dim){
 		if(ret_symbol == symbol_size && ret_id == id_size){
 			nodes[i%dictionary_len].character = (char) aux_char;
 			nodes[i%dictionary_len].parent_id = aux_64;
-			LOG(DEBUG, "Code read #%lu: <\"%c\", %lu>", i%dictionary_len,
+			LOG(DEBUG, "Code read #%llu: <\"%c\", %llu>", i%dictionary_len,
 				nodes[i%dictionary_len].character,
 				nodes[i%dictionary_len].parent_id);
 			ret = decode(nodes, nodes[i%dictionary_len], state->b_out, symbol_size);
@@ -97,7 +97,7 @@ int decomp(const struct gstate *state, const uint64_t f_dim){
 		else{
 			nodes[i%dictionary_len].character = (char) aux_char;
 			nodes[i%dictionary_len].parent_id = aux_64;
-			LOG(ERROR,"Code unreadable <\"%c\", %lu>",
+			LOG(ERROR,"Code unreadable <\"%c\", %llu>",
 				nodes[i%dictionary_len].character,
 				nodes[i%dictionary_len].parent_id);
 			ret = decode(nodes, nodes[i%dictionary_len], state->b_out, symbol_size);

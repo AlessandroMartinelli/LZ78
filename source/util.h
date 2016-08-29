@@ -26,25 +26,25 @@
 		if(__verbose==1 || type != DEBUG){						\
 		switch(type){													\
 				case ERROR:												\
-					fprintf(stdout, ANSI_COLOR_RED);				\
+					printf(ANSI_COLOR_RED);				\
 					strcpy(prefix, "ERROR");						\
 					break;												\
 				case WARNING:											\
-					fprintf(stdout, ANSI_COLOR_YELLOW);			\
+					printf(ANSI_COLOR_YELLOW);			\
 					strcpy(prefix, "WARNING");						\
 					break;												\
 				case INFO:												\
 					strcpy(prefix, "INFO");							\
 					break;												\
 				case DEBUG:												\
-					fprintf(stdout, ANSI_COLOR_BLUE);			\
+					printf(ANSI_COLOR_BLUE);			\
 					strcpy(prefix, "DEBUG");						\
 					break;												\
 			}																\
-			fprintf(stdout, "[%s: %s, %d] %s: " _fmt "\n",	\
+			printf("[%s: %s, %d] %s: " _fmt "\n",	\
 				__FILE__, __FUNCTION__, __LINE__, prefix,		\
 				##__VA_ARGS__);										\
-			fprintf(stdout, ANSI_COLOR_RESET);					\
+			printf(ANSI_COLOR_RESET);					\
 			}																\
 	}while(0)
 
@@ -56,29 +56,29 @@
 		if(__verbose==1 || type != DEBUG){						\
 		switch(type){													\
 				case ERROR:												\
-					fprintf(stdout, ANSI_COLOR_RED);				\
+					printf(ANSI_COLOR_RED);				\
 					strcpy(prefix, "ERROR");						\
 					break;												\
 				case WARNING:											\
-					fprintf(stdout, ANSI_COLOR_YELLOW);			\
+					printf(ANSI_COLOR_YELLOW);			\
 					strcpy(prefix, "WARNING");						\
 					break;												\
 				case INFO:												\
 					strcpy(prefix, "INFO");							\
 					break;												\
 				case DEBUG:												\
-					fprintf(stdout, ANSI_COLOR_BLUE);			\
+					printf(ANSI_COLOR_BLUE);			\
 					strcpy(prefix, "DEBUG");						\
 					break;												\
 			}																\
-			fprintf(stdout, "[%s: %s, %d] %s: " _fmt,	\
+			printf("[%s: %s, %d] %s: " _fmt,	\
 				__FILE__, __FUNCTION__, __LINE__, prefix,		\
 				##__VA_ARGS__);											\
 			for (i = 0; i < num; i++){									\
 				fprintf(stdout, "%02x ", (unsigned char)(buf[i]));		\
 			}														\
-			fprintf(stdout, "\n");									\
-			fprintf(stdout, ANSI_COLOR_RESET);					\
+			printf("\n");									\
+			printf(ANSI_COLOR_RESET);					\
 			}																\
 	}while(0)
 

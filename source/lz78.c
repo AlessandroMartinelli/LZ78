@@ -179,11 +179,11 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 
 	LOG_BYTES(INFO, state->header->checksum, MD5_DIGEST_LENGTH,
 		"The header structure has been filled in the following way:\n"
-		"\tOriginal size    = %ld\n"
+		"\tOriginal size    = %llu\n"
 		"\tOriginal filname = %s\n"
-		"\tMAGIC number     = %d\n"
+		"\tMAGIC number     = %u\n"
 		"\tdictionary_len  = %u\n"
-		"\tsymbol_size      = %u\n"
+		"\tsymbol_size      = %hhu\n"
 		"\tchecksum         = ",
 		state->header->original_size, state->header->filename,
 		state->header->magic_num, state->header->dictionary_len,
@@ -251,11 +251,11 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 	}
 
 	LOG_BYTES(INFO, state->header->checksum, MD5_DIGEST_LENGTH, "The header structure has been filled in the following way:\n"
-		"\tOriginal size    = %ld\n"
+		"\tOriginal size    = %llu\n"
 		"\tOriginal filname = %s\n"
-		"\tMAGIC number     = %d\n"
+		"\tMAGIC number     = %u\n"
 		"\tdictionary_len  = %u\n"
-		"\tsymbol_size      = %u\n"
+		"\tsymbol_size      = %hhu\n"
 		"\tchecksum         = ",
 		state->header->original_size, state->header->filename,
 		state->header->magic_num, state->header->dictionary_len, state->header->symbol_size);
