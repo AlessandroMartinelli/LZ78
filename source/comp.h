@@ -9,14 +9,9 @@
 
 #define AVG_CODES_PER_ENTRY 1 /* spread factor */
 
-/* PATH_TO_LZ78NAME
- *  Convert a filename, possibly comprehensive of path, 
- *  to the base name of the file, with extension changed to .lz78.
- *  As of now, it only works with name of length lesser than 256.
- */
-char* path_to_lz78name(char* path);
-
 /* COMP
  * compressor main function
  */
-int comp(char *filename_in, char *filename_out, uint32_t dictionary_size, uint8_t symbol_size);
+int comp(const struct gstate *state);
+
+int fake_comp(const struct gstate* state, char* input_file, char* output_file);

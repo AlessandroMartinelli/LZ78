@@ -14,7 +14,6 @@ OBJS = $(SRCS:%.c=%.o)
 CLEANFILES = $(PROGS) $(OBJS)
 
 .c.o:
-	echo $@
 	$(CC) -c $(CFLAGS) $< -o $@
 
 all: $(PROGS)
@@ -22,7 +21,6 @@ all: $(PROGS)
 	mv -t $(BUILDFLDR) $(CLEANFILES)
 
 lz78: $(OBJS)
-	echo lz78
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 lz78.o:	$(addprefix $(CFLDR), util.h comp.h decomp.h)

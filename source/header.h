@@ -14,7 +14,7 @@ struct header_t{
 	char *filename;	
 	unsigned char *checksum;
 	uint32_t magic_num;
-	uint32_t dictionary_size;
+	uint32_t dictionary_len;
 	uint8_t symbol_size;
 
 };
