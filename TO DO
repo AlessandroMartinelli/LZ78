@@ -1,24 +1,14 @@
-makefile
-getopt
-stat
-fstat
-
-
-poi si costruiscono le componenti una alla volta
-
-conviene cominciare con un programma piccolo che fa quasi nulla, giusto
-per vedere se compila
-
-poi si comincia ad aggiungere le cose semplici, ad es leggere 
-
-poi compressore che apre l-input e basta
-
-poi compressore che fa qualcosa di piu' etc, per controllare di aver fatto bene una cosa alla volta.
-
-Stessa cosa lato decompressore
-
-Far funzionare smartGit a Nicola
+- compressore ottimizzato
+- EOF (trick: usare codice root)
 
 
 
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam laoreet fermentum mauris nec malesuada. Duis at pharetra ex. Pellentesque quam enim, tempus ac nisl vel, euismod tristique magna. Fusce fermentum posuere nunc, quis sodales justo sollicitudin nec. Pellentesque commodo ornare arcu eget bibendum. Cras quis posuere ipsum. Nulla rutrum tortor vitae diam rutrum, vitae ullamcorper ipsum euismod. Vestibulum auctor, lectus at pellentesque dapibus, lacus eros sagittis ante, eget tempus augue eros nec massa. Cras faucibus vehicula quam, ac ultrices nulla iaculis ac.
 
+Nam interdum ipsum ut metus fermentum sodales. Suspendisse potenti. Vivamus finibus lacinia metus sit amet suscipit. Maecenas a varius nisl, sagittis finibus ante. Suspendisse potenti. Nunc bibendum, enim vel tempor volutpat, mauris lacus mattis justo, tristique malesuada nisl massa nec felis. Integer tempor, lorem non convallis suscipit, nulla ante tempor nisl, sed viverra mauris metus ac metus. Integer eget quam non mauris aliquet blandit in a ipsum. Nam ac tellus imperdiet, sollicitudin felis eget, rhoncus enim. Maecenas euismod nec lorem a malesuada. Phasellus porta at nibh eget fringilla. Phasellus condimentum porta ipsum sed egestas. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Donec volutpat nulla at facilisis commodo. Nulla egestas eu sem in semper.
+
+Nam interdum sodales sapien sed auctor. Morbi vitae turpis ultrices, ornare purus id, vestibulum leo. Aliquam pretium arcu nunc, at scelerisque nisi varius mollis. Donec rutrum eu mauris non imperdiet. Pellentesque vitae porta nibh. Sed rutrum dapibus tincidunt. Pellentesque aliquam, sapien et laoreet molestie, purus lacus condimentum eros, a malesuada velit diam non sapien. Duis commodo purus urna, at rutrum ex volutpat nec. Suspendisse tempus felis nunc, dapibus viverra est commodo sed. Vestibulum vitae tempor augue. Praesent auctor sagittis metus id facilisis. Mauris efficitur, sem non tincidunt ornare, quam nisl mattis nisi, in interdum felis purus congue libero. Nulla et odio malesuada, semper turpis ac, semper libero. Donec sit amet nibh non ante semper vehicula eget ut lacus.
+
+Ut faucibus congue urna, quis finibus turpis laoreet quis. Nunc et efficitur elit, quis tempus sem. Aliquam dignissim lacinia tristique. Etiam ligula nisl, feugiat quis diam vitae, ullamcorper bibendum ex. Donec viverra in quam a fringilla. Vivamus fringilla consequat ex, eget venenatis leo sagittis congue. Suspendisse non vulputate felis. Duis scelerisque placerat risus, at placerat metus aliquam vitae. Cras mauris metus, efficitur ac aliquam vitae, varius sed metus. Phasellus ullamcorper arcu at risus tincidunt tempus. Ut sodales interdum velit ac pellentesque. Sed quis elit nunc. Curabitur nec elementum purus.
+
+Sed eleifend maximus ex, non scelerisque elit. Sed vitae fringilla quam. Donec auctor suscipit hendrerit. Donec scelerisque euismod justo ut imperdiet. Sed porta laoreet elit. Aliquam felis arcu, ullamcorper sit amet consectetur in, laoreet id magna. Nulla neque augue, sollicitudin ac justo id, laoreet ultrices nunc. Nunc luctus, lorem sit amet euismod aliquet, purus nulla bibendum mauris, ac lobortis mauris elit eget felis. Donec id elit hendrerit, tincidunt mauris et, elementum est. 

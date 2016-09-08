@@ -17,7 +17,7 @@ char* path_to_lz78name(char* path);
 
 int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, uint32_t dictionary_len);
 
-int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file, uint64_t *f_dim);
+int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file);
 
 int comp_chooser(struct gstate* state, char* output_file);
 

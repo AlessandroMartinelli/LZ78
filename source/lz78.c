@@ -211,7 +211,7 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	return 0;
 }
 
-int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file, uint64_t *f_dim){
+int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file){
 	int ret;
 	state->b_in = NULL;
 	state->b_out = NULL;
@@ -239,9 +239,6 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 	 * file up and down without any concern.
 	 */
 	input_file_ptr = bitio_get_file(state->b_in);
-	fseek(input_file_ptr, 0L, SEEK_END);
-	*f_dim = ftell(input_file_ptr);
-	fseek(input_file_ptr, 0L, SEEK_SET);
 
 	/* reading of the header */
 	ret = header_read(state->header, input_file_ptr);
@@ -412,13 +409,12 @@ int main (int argc, char **argv){
 		}
 		
 	} else { /* Decompressor mode */
-		uint64_t f_dim;
-		ret = decomp_init_gstate(&state, input_file, output_file, &f_dim);
+		ret = decomp_init_gstate(&state, input_file, output_file);
 		if (ret == -1) goto end;
 		
 		ret = decomp_chooser(&state);
 		if(ret == 0){
-			ret = decomp(&state, f_dim);
+			ret = decomp(&state);
 		} else if(ret == 1){
 			ret = fake_decomp(&state);
 		}
