@@ -8,20 +8,24 @@
 
 #include "decomp.h"
 
-int decode(code_t *array, code_t node, struct bitio* b, uint8_t symbol_size, int i){
+int decode(code_t *array, code_t *node, struct bitio* b, uint8_t symbol_size, int i){
 	int ret = 0;
 	
 	/* upward path to the root */
-	if(node.parent_id!=0){
-		decode(array, array[node.parent_id - 1], b, symbol_size, i);
+	if(node->parent_id!=0){
+		decode(array, &array[node->parent_id], b, symbol_size, i);
 	}
 	/* now, reached the root, i know new node character */
 	else{
-		array[i].character = node.character;
+		if(i > 1<<symbol_size){ // first code doesn't set any node.character
+			array[i-1].character = node->character;
+			LOG(WARNING, "prev char(%d): %c", i-1, node->character);
+		}
 	}
 	
 	/* emit character */
-	ret = bitio_write(b, symbol_size, node.character);
+	LOG(DEBUG,"in node %d child of %d, emit char %c", i, node->parent_id, node->character);
+	ret = bitio_write(b, symbol_size, node->character);
 	if (ret < 0){
 		return -1;
 	}
@@ -29,8 +33,8 @@ int decode(code_t *array, code_t node, struct bitio* b, uint8_t symbol_size, int
 	return 0;
 }
 
-void decomp_preprocessing(code_t *n){
-	for(int i=0; i<256; i++){ //dictionary_len MUST be greater than # of symbols
+void decomp_preprocessing(code_t *n, uint8_t symbol_size){
+	for(int i=0; i < 1<<symbol_size; i++){ //dictionary_len MUST be greater than # of char
 		n[i].character = (char) i;
 		n[i].parent_id = 0;
 	}
@@ -57,16 +61,16 @@ int decomp(const struct gstate *state){
 	symbol_size = state->header->symbol_size;
 	LOG(DEBUG, "Check values read:\n\tdictionary_len: %u\n\tid_size:"
 		"%d\n\tsymbol_size: %d", dictionary_len, id_size, symbol_size);
-	printf("\n\n****\n\n");
 	
 	code_t nodes[dictionary_len];
-	decomp_preprocessing(nodes);
+	decomp_preprocessing(nodes, symbol_size);
 	
-	for(i=256; 1; i++){ /* first 256 code_t in array nodes are initialized */
+	for(i = 1<<symbol_size; 1; i++){ /* first 2^symb_size codes in array nodes are initialized */
 		/* clean of the dictionary */
-		/* (not needed because the array "nodes" works as a circular buffer) */
 		if(i!=0 && i%dictionary_len == 0){
 			LOG(WARNING, "Clean the dictionary");
+			i = 1<<symbol_size; // shift the preprocessed characters
+			/* no other actions are needed: overwrite the array */
 		}
 		
 		/* read the symbol */
@@ -92,9 +96,9 @@ int decomp(const struct gstate *state){
 			
 			/* i need start to decode from the parent of the new node,
 			 * because i have no hint on the new node character yet.
-			 * Problem: when i emit the new character?
+			 * Problem: when to emit the new character?
 			 * it's the first character of the next decode(...) */
-			ret = decode(nodes, nodes[nodes[ret_id].parent_id], state->b_out, symbol_size, ret_id);
+			ret = decode(nodes, &nodes[aux_64], state->b_out, symbol_size, ret_id);
 			
 			if (ret < 0){
 				LOG(ERROR, "Decode failed: %s", strerror(errno));

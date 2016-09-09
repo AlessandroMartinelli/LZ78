@@ -77,8 +77,8 @@
 			for (i = 0; i < num; i++){									\
 				fprintf(stdout, "%02x ", (unsigned char)(buf[i]));		\
 			}														\
-			printf("\n");									\
 			printf(ANSI_COLOR_RESET);					\
+			printf("\n");									\
 			}																\
 	}while(0)
 

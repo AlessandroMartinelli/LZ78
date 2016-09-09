@@ -3,8 +3,8 @@
 /* pre-processing:
  * initialize the tree (hash table) with all the possible simbols
  */
-void comp_preprocessing(hash_table_t *h){
-	for(int i=1; i<256; i++){
+void comp_preprocessing(hash_table_t *h, uint8_t symbol_size){
+	for(int i=0; i<(1<<symbol_size); i++){
 		//add all possible character as root(0) children
 		add_code(h, (char) i, 0, i);
 	}
@@ -34,14 +34,14 @@ int comp(const struct gstate *state){
 		goto end;
 	}
 	parent_id = 0;
-	next_id = 1;
 	id_size = ceil_log2(dictionary_len); // log base 2
 	symbol_size = state->header->symbol_size;
+	next_id = 1<<symbol_size;
 	
 	LOG(DEBUG, "Check values read:\n\tdictionary_size: %u\n\tid_size: " 
 		"%d\n\tsymbol_size: %d", dictionary_len, id_size, symbol_size);
 	
-	comp_preprocessing(h_table);
+	comp_preprocessing(h_table, symbol_size);
 	
 	/* read simbols until the EOF is reached, as long as characters are available */
 	while(sizeof(char)*8 == (ret = bitio_read(state->b_in, sizeof(char)*8, &aux_64))){
@@ -73,7 +73,8 @@ int comp(const struct gstate *state){
 				next_id = 1;
 				free_table(h_table);
 				h_table = create_hash_table(dictionary_len/AVG_CODES_PER_ENTRY);
-				comp_preprocessing(h_table);
+				comp_preprocessing(h_table, symbol_size);
+				next_id = 1<<symbol_size; // shift preprocessed characters
 			}
 		}
 		/* move down throught the existing node of the tree */

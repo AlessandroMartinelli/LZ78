@@ -21,7 +21,7 @@ typedef struct _code_t_ {
     uint64_t parent_id;
 } code_t;
 
-int decode(code_t *array, code_t node, struct bitio* b, uint8_t symbol_size, int i);
+int decode(code_t *array, code_t *node, struct bitio* b, uint8_t symbol_size, int i);
 int decomp(const struct gstate *state);
 int decomp_check(const struct gstate *state);
 int fake_decomp(const struct gstate *state);

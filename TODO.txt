@@ -1,3 +1,5 @@
+bababababababa
+
 - compressore ottimizzato
 - EOF (trick: usare codice root)
 
