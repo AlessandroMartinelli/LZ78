@@ -263,7 +263,7 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 	state->header->filename = (output_file == NULL)? state->header->filename : output_file;
 
 	/* Allocation and initialization of output bitio structure */
-	state->b_out = bitio_open(output_file, WRITE);
+	state->b_out = bitio_open(state->header->filename, WRITE);
 	if(state->b_out == NULL){
 		LOG(ERROR, "Impossible to allocate bitio structure: %s", strerror(errno));
 		return -1;

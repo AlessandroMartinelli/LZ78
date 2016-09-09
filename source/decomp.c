@@ -34,7 +34,8 @@ int decode(code_t *array, code_t *node, struct bitio* b, uint8_t symbol_size, in
 }
 
 void decomp_preprocessing(code_t *n, uint8_t symbol_size){
-	for(int i=0; i < 1<<symbol_size; i++){ //dictionary_len MUST be greater than # of char
+	int i;
+	for(i=0; i < 1<<symbol_size; i++){ //dictionary_len MUST be greater than # of char
 		n[i].character = (char) i;
 		n[i].parent_id = 0;
 	}

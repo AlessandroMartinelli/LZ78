@@ -4,7 +4,8 @@
  * initialize the tree (hash table) with all the possible simbols
  */
 void comp_preprocessing(hash_table_t *h, uint8_t symbol_size){
-	for(int i=0; i<(1<<symbol_size); i++){
+	int i;
+	for(i=0; i<(1<<symbol_size); i++){
 		//add all possible character as root(0) children
 		add_code(h, (char) i, 0, i);
 	}
