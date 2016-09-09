@@ -260,7 +260,7 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 	/* If the caller has not explicitly given a name for the output file,
 	*  we grab it from the header we've just read
 	*/
-	output_file = (output_file == NULL)? state->header->filename : output_file;
+	state->header->filename = (output_file == NULL)? state->header->filename : output_file;
 
 	/* Allocation and initialization of output bitio structure */
 	state->b_out = bitio_open(output_file, WRITE);

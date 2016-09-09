@@ -19,12 +19,12 @@ int decode(code_t *array, code_t *node, struct bitio* b, uint8_t symbol_size, in
 	else{
 		if(i > 1<<symbol_size){ // first code doesn't set any node.character
 			array[i-1].character = node->character;
-			LOG(WARNING, "prev char(%d): %c", i-1, node->character);
+			LOG(DEBUG, "Previous char(%d): %c", i-1, node->character);
 		}
 	}
 	
 	/* emit character */
-	LOG(DEBUG,"in node %d child of %d, emit char %c", i, node->parent_id, node->character);
+	LOG(DEBUG,"Decoding node %d (parent_id %d, char %c)", i, node->parent_id, node->character);
 	ret = bitio_write(b, symbol_size, node->character);
 	if (ret < 0){
 		return -1;
@@ -82,15 +82,15 @@ int decomp(const struct gstate *state){
 			LOG(ERROR, "Read failed: %s", strerror(errno));
 			return -1;
 		}
-		else if (aux_64 == 0){ /* read EOF, break infinite loop */
-			break;
-		}
 		
 		/* the character will be set on the next scan */
 		// nodes[i%dictionary_len].character =??
 		nodes[i%dictionary_len].parent_id = aux_64;
 		
 		if(ret_id == id_size){
+			if (aux_64 == 0){ /* read EOF, break infinite loop */
+				break;
+			}
 			/* use ret_id as an index */
 			ret_id = i%dictionary_len;
 			
@@ -103,7 +103,7 @@ int decomp(const struct gstate *state){
 			if (ret < 0){
 				LOG(ERROR, "Decode failed: %s", strerror(errno));
 				return -1;
-			}				
+			}
 		}
 		else{
 			/*LOG(ERROR,"Code unreadable <\"%c\", %llu>",
@@ -133,7 +133,8 @@ int decomp_check(const struct gstate *state){
 	
 	ret = stat(state->header->filename, &stat_buf);
 	if (ret == -1){
-		LOG(ERROR, "Impossibile to create header_t structure: %s", strerror(errno));
+		LOG(ERROR, "Impossibile to compute statistics on file %s: %s",
+			state->header->filename, strerror(errno));
 		return -1;		
 	}
 	

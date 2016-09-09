@@ -63,7 +63,8 @@ int comp(const struct gstate *state){
 				ret = -1;
 				goto end;
 			}
-			/* continue from the character child of the root node */
+			
+			/* continue from the same character child of the root node */
 			node = lookup_code(h_table, aux_char, 0);
 			parent_id = node->child_id;
 			
@@ -82,15 +83,15 @@ int comp(const struct gstate *state){
 			parent_id = node->child_id;
 		}
 	}
-	/* just to be sure it will emits all the characters? */
+	/* last sequence was found but it was not emitted */
 	if(node != NULL){
-		LOG(DEBUG,"emit code \"last\", char \"%c\": %d", node->character, node->parent_id);
+		LOG(DEBUG,"emit code \"last\", char \"%c\": %d", node->character, node->child_id);
 		
 		/* emit character */
 		// no need
 		
 		/* emit code */
-		ret = bitio_write(state->b_out, id_size, node->parent_id); 
+		ret = bitio_write(state->b_out, id_size, node->child_id); 
 		if (ret < 0){
 			LOG(ERROR, "Write failed: %s", strerror(errno));
 			ret = -1;
