@@ -52,7 +52,7 @@ int decomp(const struct gstate *state){
 	uint8_t symbol_size;
 	uint16_t id_size;
 
-	if(state->header->magic_num != MAGIC){
+	if(state->header->magic_num != MAGIC_NORMAL){
 		LOG(ERROR,"Wrong decompression/wrong file");
 		return -1;
 	}

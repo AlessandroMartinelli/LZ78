@@ -6,9 +6,9 @@
 
 #include "lz78.h"
 
-#define DICTIONARY_DEFAULT_LEN 65536	/* TODO: adjust this value */
-#define DICTIONARY_MIN_LEN 4096LL		/* TODO: adjust this value */
-#define DICTIONARY_MAX_LEN 4294967295LL	/* TODO: check this value (2^32 -1)*/
+#define DICTIONARY_DEFAULT_LEN 65536		/* ~ 2 levels */
+#define DICTIONARY_MIN_LEN 16777216LL		/* ~ 3 levels */
+#define DICTIONARY_MAX_LEN 4294967296LL	/* ~ 4 levels */
 #define SYMBOL_SIZE 8
 
 #define DECOMP_F	0x80	/* decompression flag */
@@ -113,10 +113,10 @@ int comp_chooser(struct gstate* state, char* output_file){
 
 int decomp_chooser(struct gstate* state){
 	switch(state->header->magic_num){
-		case MAGIC:
+		case MAGIC_NORMAL:
 			LOG(DEBUG,"Plain decompression!");
 			return 0; /* plain compression */
-		case NOT_MAGIC:
+		case MAGIC_FAKE:
 			LOG(DEBUG,"Fake decompression!");
 			return 1; /* fake compression */
 		default:
@@ -172,7 +172,7 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 		stat_buf.st_size,			/* original_size */
 		bname, 						/* input file name */
 		checksum,					/* checksum */
-		MAGIC,						/* magic number */
+		MAGIC_NORMAL,						/* magic number */
 		dictionary_len,			/* dictionary_size */
 		SYMBOL_SIZE					/* symbol_size */
 	};
@@ -404,7 +404,7 @@ int main (int argc, char **argv){
 		clean_bitio(&state);
 		ret = comp_chooser(&state, output_file);
 		if(ret == 1){
-			state.header->magic_num = NOT_MAGIC;
+			state.header->magic_num = MAGIC_FAKE;
 			fake_comp(&state, input_file, output_file);
 		}
 		
