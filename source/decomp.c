@@ -132,10 +132,10 @@ int decomp_check(const struct gstate *state){
 	struct stat stat_buf;	
 	unsigned char checksum[MD5_DIGEST_LENGTH];	
 	
-	ret = stat(state->header->filename, &stat_buf);
+	ret = stat(state->output_file, &stat_buf);
 	if (ret == -1){
 		LOG(ERROR, "Impossibile to compute statistics on file %s: %s",
-			state->header->filename, strerror(errno));
+			state->output_file, strerror(errno));
 		return -1;		
 	}
 	
@@ -146,7 +146,7 @@ int decomp_check(const struct gstate *state){
 	LOG(INFO, "Size match: OK!");
 	
 	/* compare checksum */
-	csum(state->header->filename, checksum);
+	csum(state->output_file, checksum);
 	if (checksum == NULL){
 		LOG(ERROR, "Checksum calculation failed: %s", strerror(errno));
 		return -1;

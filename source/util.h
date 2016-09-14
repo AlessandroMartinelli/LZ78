@@ -86,6 +86,8 @@
 enum log_type {ERROR, WARNING, INFO, DEBUG};
 
 struct gstate{
+	char* input_file;
+	char* output_file;
 	struct bitio* b_in;
 	struct bitio* b_out;
 	struct header_t* header;

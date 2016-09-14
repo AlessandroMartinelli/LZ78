@@ -68,37 +68,22 @@ void clean_bitio(struct gstate* state){
 
 void clean_state(struct gstate* state){
 	if(state){
+		if(state->output_file) {
+			free(state->output_file);	
+		}
 		if(state->header){
-			if(state->header->filename) free(state->header->filename);
-			if(state->header->checksum) free(state->header->checksum);
-			state->header->filename = NULL;
-			state->header->checksum = NULL;
+			header_free(state->header);
 			free(state->header);
 			state->header = NULL;
 		}
 		clean_bitio(state);
 	}
 	state = NULL;
-	
-	/* The input file is always explicitly given, so there is no need
-	 * for explicitly freeing it. About the output_file:
-	 * If the output_file name has been explicitly given, there is no need
-	 * to manually free it. Even though that is not the case, if we are in
-	 * decompression mode the output_file name has been allocated in the
-	 * header_read, so it will be deallocated when the gstate structure
-	 * will be deallocated. So, we must explicitly free it only in the
-	 * remaining following situation:
-	 */
-	/*if ((flag & OUTPUT_F) == 0){
-		if ((flag & DECOMP_F) == 0){
-			free(output_file);
-		}
-	}*/
 }
 
-int comp_chooser(struct gstate* state, char* output_file){
+int comp_chooser(struct gstate* state){
 	struct stat stat_buf;
-	if (stat(output_file, &stat_buf) == -1){
+	if (stat(state->output_file, &stat_buf) == -1){
 		LOG(ERROR, "Impossible to compute statistics: %s", strerror(errno));
 		return -1;
 	}
@@ -133,6 +118,28 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	struct stat stat_buf;
 	char* bname = NULL;
 	unsigned char* checksum;
+	
+	/* Initialization of state->input_filename and state->output_filename */
+	/* input_file is always given by the user, so there is no need
+	 * to allocate memory for it
+	 */
+	state->input_file = input_file;
+	
+	/* We put a memory allocation even if the output_file argument
+	 * was explicitly given by the user, so the clean function is
+	 * more clear.
+	 */
+	if (output_file){ 
+	    state->output_file = calloc(strlen(output_file) + 1, sizeof(char)); 
+	    if (state->output_file == NULL){ 
+			errno = ENOMEM; 
+			LOG(ERROR, "Space allocation failed: %s", strerror(errno));       
+			return -1; 
+	    } 
+	    strcpy(state->output_file, output_file); 
+	} else {
+		state->output_file = path_to_lz78name(state->input_file);
+	}
 
 	/* Allocation of header_t structure */
 	state->header = calloc(1, sizeof(struct header_t));
@@ -143,7 +150,7 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	}
 
 	/* Initialization of stat structure (stat_buf) */
-	ret = stat(input_file, &stat_buf);
+	ret = stat(state->input_file, &stat_buf);
 	if (ret == -1){
 		LOG(ERROR, "Impossible to create calculate statistics: %s", strerror(errno));
 		return -1;
@@ -156,16 +163,16 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 		LOG(ERROR, "Impossible to allocate the checksum: %s", strerror(errno));
 		ret = -1;
 	}
-	csum(input_file, checksum);
+	csum(state->input_file, checksum);
 	if (checksum == NULL){
 		LOG(ERROR, "Impossible to compute checksum: %s", strerror(errno));
 		ret = -1;
 	}
 	
-	/* Copy original filename into the heap */
-	name_len = strlen(basename(input_file));
+	/* Copy the base filename (i.e. leaving out the path) into the heap */
+	name_len = strlen(basename(state->input_file));
 	bname = calloc(name_len+1, sizeof(char));
-	strncpy(bname, basename(input_file), name_len);
+	strncpy(bname, basename(state->input_file), name_len);
 
 	/* Filling of header_t structure */
 	*(state->header) = (struct header_t){
@@ -190,8 +197,8 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 		state->header->symbol_size);
 	
 	/* Allocation and initialization of bitio structures */
-	state->b_in = bitio_open(input_file, READ);
-	state->b_out = bitio_open(output_file, WRITE);
+	state->b_in = bitio_open(state->input_file, READ);
+	state->b_out = bitio_open(state->output_file, WRITE);
 	if(state->b_out == NULL || state->b_in == NULL){
 		LOG(ERROR, "Impossible to allocate bitio structure: %s", strerror(errno));
 		return -1;
@@ -234,7 +241,7 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 
 	/* We take the input file pointer from the bitio read structure,
 	 * then we retrieve the file dimension. The choice of retrieving the
-	 * file dimension here isn'n very appropriate, but it is useful
+	 * file dimension here may not be so appropriate, but it is useful
 	 * since here, before reading the header, is easier to scan the
 	 * file up and down without any concern.
 	 */
@@ -257,13 +264,35 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 		state->header->original_size, state->header->filename,
 		state->header->magic_num, state->header->dictionary_len, state->header->symbol_size);
 
+	/* Initialization of state->input_filename and state->output_filename */
+	/* input_file is always given by the user, so there is no need
+	 * to allocate memory for it
+	 */
+	state->input_file = input_file;
+	
 	/* If the caller has not explicitly given a name for the output file,
 	*  we grab it from the header we've just read
 	*/
-	state->header->filename = (output_file == NULL)? state->header->filename : output_file;
+	if (output_file){ 
+	    state->output_file = calloc(strlen(output_file) + 1, sizeof(char)); 
+	    if (state->output_file == NULL){ 
+			errno = ENOMEM; 
+			LOG(ERROR, "Space allocation failed: %s", strerror(errno));       
+			return -1; 
+	    } 
+	    strcpy(state->output_file, output_file); 
+	} else {
+	    state->output_file = calloc(strlen(state->header->filename) + 1, sizeof(char)); 
+	    if (state->output_file == NULL){ 
+			errno = ENOMEM; 
+			LOG(ERROR, "Space allocation failed: %s", strerror(errno));       
+			return -1; 
+	    } 	
+		strcpy(state->output_file, state->header->filename);
+	}
 
 	/* Allocation and initialization of output bitio structure */
-	state->b_out = bitio_open(state->header->filename, WRITE);
+	state->b_out = bitio_open(state->output_file, WRITE);
 	if(state->b_out == NULL){
 		LOG(ERROR, "Impossible to allocate bitio structure: %s", strerror(errno));
 		return -1;
@@ -392,9 +421,6 @@ int main (int argc, char **argv){
 		/* If the caller has not explicitly given a name for the output file,
 		 *  here we create it, as <name_without_path_and_extension>.lz78
 		 */
-		output_file = (output_file == NULL) ?
-			path_to_lz78name(input_file) : output_file;
-		
 		ret = comp_init_gstate(&state, input_file, output_file, dictionary_len);
 		if (ret == -1) goto end;
 		
@@ -402,10 +428,10 @@ int main (int argc, char **argv){
 		if (ret == -1) goto end;
 		
 		clean_bitio(&state);
-		ret = comp_chooser(&state, output_file);
+		ret = comp_chooser(&state);
 		if(ret == 1){
 			state.header->magic_num = MAGIC_FAKE;
-			fake_comp(&state, input_file, output_file);
+			fake_comp(&state);
 		}
 		
 	} else { /* Decompressor mode */

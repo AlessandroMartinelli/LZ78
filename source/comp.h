@@ -31,4 +31,4 @@ int comp(const struct gstate *state);
  * - 0: all fine
  * - -1: compression error
  */
-int fake_comp(const struct gstate* state, char* input_file, char* output_file);
+int fake_comp(const struct gstate* state);

@@ -119,9 +119,9 @@ end:
 
 
 /* Write the header and copy the file */
-int fake_comp(const struct gstate* state, char* input_file, char* output_file){
-	FILE* f_in = fopen(input_file, "r");
-	FILE* f_out = fopen(output_file, "w");
+int fake_comp(const struct gstate* state){
+	FILE* f_in = fopen(state->input_file, "r");
+	FILE* f_out = fopen(state->output_file, "w");
 	if(f_in == NULL || f_out == NULL){
 		LOG(ERROR, "Impossible to open files: %s", strerror(errno));
 		return -1;
@@ -135,7 +135,7 @@ int fake_comp(const struct gstate* state, char* input_file, char* output_file){
 	while((ret=fread(buff, 1, 1024, f_in))>0){
 		if((fwrite(buff, 1, ret, f_out))!=ret){ 
 			errno = ENOSPC;
-			LOG(ERROR, "Impossible to write output file (%s): %s", output_file, strerror(errno));
+			LOG(ERROR, "Impossible to write output file (%s): %s", state->output_file, strerror(errno));
 			return -1;
 		}
 	}

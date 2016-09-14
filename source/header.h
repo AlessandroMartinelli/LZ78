@@ -31,6 +31,6 @@ int header_read(struct header_t *h, FILE *f);
 /* This function must be used only after header_read usages
  * It frees the memory allocated for containing filename and checksum
  */
-void header_read_free(struct header_t *h);
+void header_free(struct header_t *h);
 
 #endif

@@ -89,21 +89,21 @@ int header_read(struct header_t *h, FILE *f){
 	
 	h->checksum = (unsigned char*)calloc(1, MD5_DIGEST_LENGTH);
 	if (h->filename == NULL){
-		errno = ENOMEM;
-		header_read_free(h);		
+		errno = ENOMEM;		
 		return -1;
 	}	
 	ret += fread(h->checksum, MD5_DIGEST_LENGTH, 1, f);	
 	if (ret != 7){
 		errno = ENODATA;
-		header_read_free(h);
 		return -1;	
 	}
 	
 	return ret;
 }
 
-void header_read_free(struct header_t *h){
-	if (h->filename) free(h->filename);
-	if (h->checksum) free(h->checksum);
-}
+void header_free(struct header_t *h){ 
+  if (h->filename) free(h->filename); 
+  if (h->checksum) free(h->checksum); 
+  h->filename = NULL;			
+  h->checksum = NULL;
+} 
