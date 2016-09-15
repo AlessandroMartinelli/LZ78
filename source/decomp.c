@@ -24,7 +24,7 @@ int decode(code_t *array, code_t *node, struct bitio* b, uint8_t symbol_size, in
 	}
 	
 	/* emit character */
-	LOG(DEBUG,"Decoding node %d (parent_id %d, char %c)", i, node->parent_id, node->character);
+	LOG(DEBUG,"Decoding node %d (parent_id %" PRIu32 ", char %c)", i, node->parent_id, node->character);
 	ret = bitio_write(b, symbol_size, node->character);
 	if (ret < 0){
 		return -1;
@@ -50,7 +50,7 @@ int decomp(const struct gstate *state){
 	uint32_t dictionary_len;
 	uint64_t aux_64;
 	uint8_t symbol_size;
-	uint16_t id_size;
+	uint32_t id_size;
 
 	if(state->header->magic_num != MAGIC_NORMAL){
 		LOG(ERROR,"Wrong decompression/wrong file");
@@ -60,8 +60,8 @@ int decomp(const struct gstate *state){
 	dictionary_len = state->header->dictionary_len;
 	id_size = ceil_log2(dictionary_len); /* log base 2 */
 	symbol_size = state->header->symbol_size;
-	LOG(DEBUG, "Check values read:\n\tdictionary_len: %u\n\tid_size:"
-		"%d\n\tsymbol_size: %d", dictionary_len, id_size, symbol_size);
+	LOG(DEBUG, "Check values read:\n\tdictionary_len: %" PRIu32 "\n\tid_size:"
+		"%" PRIu32 "\n\tsymbol_size: %" PRIu8, dictionary_len, id_size, symbol_size);
 	
 	code_t nodes[dictionary_len];
 	decomp_preprocessing(nodes, symbol_size);
@@ -88,7 +88,7 @@ int decomp(const struct gstate *state){
 		// nodes[i%dictionary_len].character =??
 		nodes[i%dictionary_len].parent_id = aux_64;
 		
-		if(ret_id == id_size){
+		if((unsigned int)ret_id == id_size){
 			if (aux_64 == 0){ /* read EOF, break infinite loop */
 				break;
 			}

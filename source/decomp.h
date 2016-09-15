@@ -12,13 +12,14 @@
 #include <unistd.h>			/* stat */
 #include <string.h>
 #include <math.h>
+#include <inttypes.h>
 #include "bitio.h"
 #include "util.h"
 #include "header.h"
 
 typedef struct _code_t_ {
     char character;
-    uint64_t parent_id;
+    uint32_t parent_id;
 } code_t;
 
 int decode(code_t *array, code_t *node, struct bitio* b, uint8_t symbol_size, int i);

@@ -19,8 +19,8 @@ int comp(const struct gstate *state){
 	uint64_t aux_64;
 	char aux_char;
 	int ret;
-	uint16_t next_id;
-	uint16_t parent_id;
+	uint32_t next_id;
+	uint32_t parent_id;
 	uint8_t id_size;
 	uint32_t dictionary_len;
 	uint8_t symbol_size;
@@ -39,8 +39,8 @@ int comp(const struct gstate *state){
 	symbol_size = state->header->symbol_size;
 	next_id = 1<<symbol_size;
 	
-	LOG(DEBUG, "Check values read:\n\tdictionary_size: %u\n\tid_size: " 
-		"%d\n\tsymbol_size: %d", dictionary_len, id_size, symbol_size);
+	LOG(DEBUG, "Check values read:\n\tdictionary_size: %" PRIu32 "\n\tid_size: " 
+		"%" PRIu8 "\n\tsymbol_size: %" PRIu8, dictionary_len, id_size, symbol_size);
 	
 	comp_preprocessing(h_table, symbol_size);
 	
@@ -51,7 +51,7 @@ int comp(const struct gstate *state){
 		
 		/* node not found (add to the tree) */
 		if(node == NULL){
-			LOG(DEBUG,"emit code #%d, char \"%c\": %d", next_id, aux_char, parent_id);
+			LOG(DEBUG,"emit code #%" PRIu32 ", char \"%c\": %" PRIu32, next_id, aux_char, parent_id);
 			add_code(h_table, aux_char, parent_id, next_id++);
 			
 			/* emit character */
@@ -86,7 +86,7 @@ int comp(const struct gstate *state){
 	}
 	/* last sequence was found but it was not emitted */
 	if(node != NULL){
-		LOG(DEBUG,"emit code \"last\", char \"%c\": %d", node->character, node->child_id);
+		LOG(DEBUG,"emit code \"last\", char \"%c\": %" PRIu32, node->character, node->child_id);
 		
 		/* emit character */
 		// no need

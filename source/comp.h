@@ -2,6 +2,7 @@
 #include <unistd.h>			/* stat */
 #include <math.h>			/* log, ceil */
 #include <libgen.h>			/* for basename XPG version */
+#include <inttypes.h>
 #include "bitio.h"
 #include "util.h"
 #include "header.h"

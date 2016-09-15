@@ -14,7 +14,7 @@
 #define ANSI_COLOR_RED		"\x1b[31m"
 #define ANSI_COLOR_RESET	"\x1b[0m"
 #define ANSI_COLOR_YELLOW	"\x1b[33m"
-#define ANSI_COLOR_BLUE		"\x1b[34m"
+#define ANSI_COLOR_MAGENTA	"\x1b[35m"
 
 #define MAGIC_NORMAL 3
 #define MAGIC_FAKE 2
@@ -37,7 +37,7 @@
 					strcpy(prefix, "INFO");							\
 					break;												\
 				case DEBUG:												\
-					printf(ANSI_COLOR_BLUE);			\
+					printf(ANSI_COLOR_MAGENTA);			\
 					strcpy(prefix, "DEBUG");						\
 					break;												\
 			}																\
@@ -67,7 +67,7 @@
 					strcpy(prefix, "INFO");							\
 					break;												\
 				case DEBUG:												\
-					printf(ANSI_COLOR_BLUE);			\
+					printf(ANSI_COLOR_MAGENTA);			\
 					strcpy(prefix, "DEBUG");						\
 					break;												\
 			}																\

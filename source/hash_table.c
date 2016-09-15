@@ -31,11 +31,11 @@ hash_table_t *create_hash_table(uint32_t size) {
 }
 
 /* simply way to implement a hash function */
-uint16_t hash(hash_table_t *hashtable, char c, uint16_t id) {
+uint32_t hash(hash_table_t *hashtable, char c, uint32_t id) {
 	uint16_t hashkey;
 
-	/* we start our hash out concateneting 2 times c */
-	hashkey = c + (c << 8);
+	/* we start our hash out concateneting 4 times c */
+	hashkey = c + (c << 8) + (c << 16) + (c << 24);
 
 	/* Do the XOR bit-by-bit between hashkey and id */
 	hashkey ^= id;
@@ -46,7 +46,7 @@ uint16_t hash(hash_table_t *hashtable, char c, uint16_t id) {
 	return hashkey % hashtable->size;
 }
 
-list_t *lookup_code(hash_table_t *hashtable, char c, uint16_t id) {
+list_t *lookup_code(hash_table_t *hashtable, char c, uint32_t id) {
 	list_t *list;
 	uint16_t hashkey = hash(hashtable, c, id);
 
@@ -60,7 +60,7 @@ list_t *lookup_code(hash_table_t *hashtable, char c, uint16_t id) {
 	return NULL;
 }
 
-int add_code(hash_table_t *hashtable, char c, uint16_t id, uint16_t new_node) {
+int add_code(hash_table_t *hashtable, char c, uint32_t id, uint32_t new_node) {
 	list_t *new_list;
 	list_t *current_list;
 	uint16_t hashkey = hash(hashtable, c, id);

@@ -10,6 +10,7 @@
 #include <stdint.h>			// for uintXX_t
 #include <errno.h>			// for using the variabile errno
 //#include <libgen.h>			// for basename XPG version
+#include <inttypes.h>
 #include "util.h"
 #include "comp.h"
 #include "decomp.h"
@@ -199,11 +200,11 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 
 	LOG_BYTES(INFO, state->header->checksum, MD5_DIGEST_LENGTH,
 		"The header structure has been filled in the following way:\n"
-		"\tOriginal size    = %llu\n"
+		"\tOriginal size    = %" PRIu64 "\n"
 		"\tOriginal filname = %s\n"
-		"\tMAGIC number     = %u\n"
-		"\tdictionary_len  = %u\n"
-		"\tsymbol_size      = %hhu\n"
+		"\tMAGIC number     = %" PRIu32 "\n"
+		"\tdictionary_len  = %" PRIu32 "\n"
+		"\tsymbol_size      = %" PRIu8 "\n"
 		"\tchecksum         = ",
 		state->header->original_size, state->header->filename,
 		state->header->magic_num, state->header->dictionary_len,
@@ -268,11 +269,11 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 	}
 
 	LOG_BYTES(INFO, state->header->checksum, MD5_DIGEST_LENGTH, "The header structure has been filled in the following way:\n"
-		"\tOriginal size    = %llu\n"
+		"\tOriginal size    = %" PRIu64 "\n"
 		"\tOriginal filname = %s\n"
-		"\tMAGIC number     = %u\n"
-		"\tdictionary_len  = %u\n"
-		"\tsymbol_size      = %hhu\n"
+		"\tMAGIC number     = %" PRIu32 "\n"
+		"\tdictionary_len  = %" PRIu32 "\n"
+		"\tsymbol_size      = %" PRIu8 "\n"
 		"\tchecksum         = ",
 		state->header->original_size, state->header->filename,
 		state->header->magic_num, state->header->dictionary_len, state->header->symbol_size);
@@ -416,7 +417,7 @@ int main (int argc, char **argv){
 	}
 	if ((flag & DECOMP_F) == 0){
 		LOG(INFO, "The following parameter have been choosen:\n"
-			"\tDictionary len   = %d %s\n"
+			"\tDictionary len   = %" PRIu32 " %s\n"
 			"\tVerbose mode     = %s\n"
 			"\tInput file       = %s"
 			"%s%s",
