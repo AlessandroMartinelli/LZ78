@@ -32,7 +32,7 @@ hash_table_t *create_hash_table(uint32_t size) {
 
 /* simply way to implement a hash function */
 uint32_t hash(hash_table_t *hashtable, char c, uint32_t id) {
-	uint16_t hashkey;
+	uint32_t hashkey;
 
 	/* we start our hash out concateneting 4 times c */
 	hashkey = c + (c << 8) + (c << 16) + (c << 24);
@@ -48,7 +48,7 @@ uint32_t hash(hash_table_t *hashtable, char c, uint32_t id) {
 
 list_t *lookup_code(hash_table_t *hashtable, char c, uint32_t id) {
 	list_t *list;
-	uint16_t hashkey = hash(hashtable, c, id);
+	uint32_t hashkey = hash(hashtable, c, id);
 
 	/* Go to the correct list based on the hash value and see if the node is
 	 * in the list.  If it is, return a pointer to the list element.
@@ -63,7 +63,7 @@ list_t *lookup_code(hash_table_t *hashtable, char c, uint32_t id) {
 int add_code(hash_table_t *hashtable, char c, uint32_t id, uint32_t new_node) {
 	list_t *new_list;
 	list_t *current_list;
-	uint16_t hashkey = hash(hashtable, c, id);
+	uint32_t hashkey = hash(hashtable, c, id);
 
 	/* Attempt to allocate memory for list */
 	if ((new_list = malloc(sizeof (list_t))) == NULL) return 1;
