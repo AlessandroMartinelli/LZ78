@@ -16,7 +16,7 @@
 #include "decomp.h"
 
 #define DICTIONARY_DEFAULT_LEN 16777216LL	/* ~ 3 levels */
-#define DICTIONARY_MIN_LEN 65536LL			/* ~ 2 levels */
+#define DICTIONARY_MIN_LEN 1024LL			/* ~ 2 levels */
 #define DICTIONARY_MAX_LEN 4294967296LL	/* ~ 4 levels */
 #define SYMBOL_SIZE 8
 
