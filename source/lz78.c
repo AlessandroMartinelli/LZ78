@@ -4,7 +4,15 @@
  *  Finally, 0 was used for success.
  */
 
-#include "lz78.h"
+//#include <ctype.h>		// for isprint
+#include <stdlib.h>			// for strtol
+#include <unistd.h>			// for getopt, access
+#include <stdint.h>			// for uintXX_t
+#include <errno.h>			// for using the variabile errno
+//#include <libgen.h>			// for basename XPG version
+#include "util.h"
+#include "comp.h"
+#include "decomp.h"
 
 #define DICTIONARY_DEFAULT_LEN 65536		/* ~ 2 levels */
 #define DICTIONARY_MIN_LEN 16777216LL		/* ~ 3 levels */
@@ -33,6 +41,11 @@ void usage(){
 		"Report bugs to <ceafnmcm AT gmail DOT com>.\n");
 }
 
+/* PATH_TO_LZ78NAME
+ *  Convert a filename, possibly comprehensive of path, 
+ *  to the base name of the file, with extension changed to .lz78.
+ *  As of now, it only works with name of length lesser than 256.
+ */
 char* path_to_lz78name(char* path){
 	char *base_name;
 	char *dot_ptr = NULL;	/* pointer at last dot inside a filename */
