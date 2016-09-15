@@ -63,7 +63,11 @@ int decomp(const struct gstate *state){
 	LOG(DEBUG, "Check values read:\n\tdictionary_len: %" PRIu32 "\n\tid_size:"
 		"%" PRIu32 "\n\tsymbol_size: %" PRIu8, dictionary_len, id_size, symbol_size);
 	
-	code_t nodes[dictionary_len];
+	code_t *nodes = (code_t*)malloc(dictionary_len*sizeof(code_t));
+	if(nodes == NULL){
+		LOG(ERROR, "Not enough memory to allocate the tree");
+		return -1;
+	}
 	decomp_preprocessing(nodes, symbol_size);
 	
 	for(i = 1<<symbol_size; 1; i++){ /* first 2^symb_size codes in array nodes are initialized */
@@ -114,7 +118,8 @@ int decomp(const struct gstate *state){
 			return -1;
 		}
 	}
-
+	free(nodes);
+	
 	/* flush bitio buffer */
 	/*ret = bitio_close(state->b_out);
 	state->b_out = NULL;
