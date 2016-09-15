@@ -15,8 +15,8 @@
 #include "comp.h"
 #include "decomp.h"
 
-#define DICTIONARY_DEFAULT_LEN 65536		/* ~ 2 levels */
-#define DICTIONARY_MIN_LEN 16777216LL		/* ~ 3 levels */
+#define DICTIONARY_DEFAULT_LEN 16777216LL	/* ~ 3 levels */
+#define DICTIONARY_MIN_LEN 65536LL			/* ~ 2 levels */
 #define DICTIONARY_MAX_LEN 4294967296LL	/* ~ 4 levels */
 #define SYMBOL_SIZE 8
 
@@ -402,7 +402,7 @@ int main (int argc, char **argv){
 		} else {
 			aux = strtol(dictionary_len_str, NULL, 10);
 			if (aux < DICTIONARY_MIN_LEN || aux > DICTIONARY_MAX_LEN){
-				LOG(INFO, "wrong dictionary length. It must be between "
+				LOG(ERROR, "Wrong dictionary length. It must be between "
 					"%lld and %lld", DICTIONARY_MIN_LEN, DICTIONARY_MAX_LEN);
 				return 1;
 			}

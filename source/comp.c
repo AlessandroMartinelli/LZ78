@@ -71,7 +71,7 @@ int comp(const struct gstate *state){
 			
 			/* dictionary is full: clean */
 			if(next_id > dictionary_len){
-				LOG(DEBUG, "Dictionary full!");
+				LOG(WARNING, "Dictionary full!");
 				next_id = 1;
 				free_table(h_table);
 				h_table = create_hash_table(dictionary_len/AVG_CODES_PER_ENTRY);
