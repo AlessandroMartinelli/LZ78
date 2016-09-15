@@ -7,7 +7,7 @@ void comp_preprocessing(hash_table_t *h, uint8_t symbol_size){
 	int i;
 	for(i=0; i<(1<<symbol_size); i++){
 		//add all possible character as root(0) children
-		add_code(h, (char) i, 0, i);
+		add_code(h, (char) i, 0, i+1);
 	}
 	
 	return;
@@ -37,7 +37,7 @@ int comp(const struct gstate *state){
 	parent_id = 0;
 	id_size = ceil_log2(dictionary_len); // log base 2
 	symbol_size = state->header->symbol_size;
-	next_id = 1<<symbol_size;
+	next_id = (1<<symbol_size) + 1;
 	
 	LOG(DEBUG, "Check values read:\n\tdictionary_size: %" PRIu32 "\n\tid_size: " 
 		"%" PRIu8 "\n\tsymbol_size: %" PRIu8, dictionary_len, id_size, symbol_size);
@@ -76,7 +76,7 @@ int comp(const struct gstate *state){
 				free_table(h_table);
 				h_table = create_hash_table(dictionary_len/AVG_CODES_PER_ENTRY);
 				comp_preprocessing(h_table, symbol_size);
-				next_id = 1<<symbol_size; // shift preprocessed characters
+				next_id = (1<<symbol_size) + 1; // shift preprocessed characters
 			}
 		}
 		/* move down throught the existing node of the tree */

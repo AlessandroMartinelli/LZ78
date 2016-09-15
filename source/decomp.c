@@ -86,7 +86,7 @@ int decomp(const struct gstate *state){
 		
 		/* the character will be set on the next scan */
 		// nodes[i%dictionary_len].character =??
-		nodes[i%dictionary_len].parent_id = aux_64;
+		nodes[i%dictionary_len].parent_id = (aux_64 - 1);
 		
 		if((unsigned int)ret_id == id_size){
 			if (aux_64 == 0){ /* read EOF, break infinite loop */
@@ -99,7 +99,7 @@ int decomp(const struct gstate *state){
 			 * because i have no hint on the new node character yet.
 			 * Problem: when to emit the new character?
 			 * it's the first character of the next decode(...) */
-			ret = decode(nodes, &nodes[aux_64], state->b_out, symbol_size, ret_id);
+			ret = decode(nodes, &nodes[aux_64 - 1], state->b_out, symbol_size, ret_id);
 			
 			if (ret < 0){
 				LOG(ERROR, "Decode failed: %s", strerror(errno));
