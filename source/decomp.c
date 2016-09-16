@@ -74,7 +74,7 @@ int decomp(const struct gstate *state){
 	for(i = 1<<symbol_size; 1; i++){ /* first 2^symb_size codes in array nodes are initialized */
 		/* clean of the dictionary */
 		if(i!=0 && i%dictionary_len == 0){
-			LOG(WARNING, "Cleaning the dictionary...");
+			LOG(DEBUG, "Cleaning the dictionary...");
 			i = 1<<symbol_size; // shift the preprocessed characters
 			/* no other actions are needed: overwrite the array */
 		}

@@ -1,7 +1,8 @@
-/* TODO: Following the examples in the C bible, I've used 1 as return value
- *  when there was an error in the command given by command line, while
- *  -1 was used for grave error, e.g memory allocation failed.
- *  Finally, 0 was used for success.
+/* RETURN VALUE 
+ *  The value returned by the program must be interpreted in the following way: 
+ *   1:  the sintax used fol calling the program was incorrect 
+ *   -1: there was an error in the program 
+ *   0:  the program completed without error
  */
 
 //#include <ctype.h>		// for isprint
@@ -9,22 +10,22 @@
 #include <unistd.h>			// for getopt, access
 #include <stdint.h>			// for uintXX_t
 #include <errno.h>			// for using the variabile errno
-//#include <libgen.h>			// for basename XPG version
-#include <inttypes.h>
+//#include <libgen.h>		// for basename XPG version
+#include <inttypes.h>		// for PRIuxx macros
 #include "util.h"
 #include "comp.h"
 #include "decomp.h"
 
 #define DICTIONARY_DEFAULT_LEN 65536LL		/* ~ 2 levels */
 #define DICTIONARY_MIN_LEN 1024LL
-#define DICTIONARY_MAX_LEN 16777216LL	/* ~ 3 levels */
+#define DICTIONARY_MAX_LEN 16777216LL		/* ~ 3 levels */
 #define SYMBOL_SIZE 8
 
 #define DECOMP_F	0x80	/* decompression flag */
 #define VERB_F		0x40	/* verbose flag */
 #define HELP_F		0x20	/* help flag */
 #define DIC_LEN_F	0x10	/* length of dictionary flag */
-#define INPUT_F	0x08	/* input file flag */
+#define INPUT_F	0x08		/* input file flag */
 #define OUTPUT_F	0x04	/* output file flag */
 #define MMA_F		0x02	/* missing mandatory argument flag */
 #define IU_F		0x01	/* incorrect usage flag */
@@ -67,6 +68,7 @@ char* path_to_lz78name(char* path){
 		return NULL;
 	}
 	strncpy(lz78name, base_name, dot_index);
+	lz78name[dot_index] = '\0';	
 	strcat(lz78name, ".lz78");
 	return lz78name;
 }
@@ -187,6 +189,7 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	name_len = strlen(basename(state->input_file));
 	bname = malloc(name_len+1);
 	strncpy(bname, basename(state->input_file), name_len);
+	bname[name_len] = '\0';	
 
 	/* Filling of header_t structure */
 	*(state->header) = (struct header_t){
@@ -203,7 +206,7 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 		"\tOriginal size    = %" PRIu64 "\n"
 		"\tOriginal filname = %s\n"
 		"\tMAGIC number     = %" PRIu32 "\n"
-		"\tdictionary_len  = %" PRIu32 "\n"
+		"\tdictionary_len   = %" PRIu32 "\n"
 		"\tsymbol_size      = %" PRIu8 "\n"
 		"\tchecksum         = ",
 		state->header->original_size, state->header->filename,
@@ -272,7 +275,7 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 		"\tOriginal size    = %" PRIu64 "\n"
 		"\tOriginal filname = %s\n"
 		"\tMAGIC number     = %" PRIu32 "\n"
-		"\tdictionary_len  = %" PRIu32 "\n"
+		"\tdictionary_len   = %" PRIu32 "\n"
 		"\tsymbol_size      = %" PRIu8 "\n"
 		"\tchecksum         = ",
 		state->header->original_size, state->header->filename,
@@ -402,7 +405,7 @@ int main (int argc, char **argv){
 		} else {
 			aux = strtol(dictionary_len_str, NULL, 10);
 			if (aux < DICTIONARY_MIN_LEN || aux > DICTIONARY_MAX_LEN){
-				LOG(ERROR, "Wrong dictionary length. It must be between "
+				LOG(INFO, "Wrong dictionary length. It must be between "
 					"%lld and %lld", DICTIONARY_MIN_LEN, DICTIONARY_MAX_LEN);
 				return 1;
 			}
@@ -445,7 +448,7 @@ int main (int argc, char **argv){
 		ret = comp_chooser(&state);
 		if(ret == 1){
 			state.header->magic_num = MAGIC_FAKE;
-			fake_comp(&state);
+			ret = fake_comp(&state);
 		}
 		
 	} else { /* Decompressor mode */
@@ -458,6 +461,8 @@ int main (int argc, char **argv){
 		} else if(ret == 1){
 			ret = fake_decomp(&state);
 		}
+		
+		if (ret == -1) goto end;
 		
 		clean_bitio(&state);
 		ret = decomp_check(&state);

@@ -56,7 +56,7 @@ int comp(const struct gstate *state){
 		
 		/* node not found (add to the tree) */
 		if(node == NULL){
-			LOG(DEBUG,"emit code #%" PRIu32 ", char \"%c\": %" PRIu32, next_id, aux_char, parent_id);
+			//LOG(DEBUG,"emit code #%" PRIu32 ", char \"%c\": %" PRIu32, next_id, aux_char, parent_id);
 			ret = add_code(h_table, aux_char, parent_id, next_id++);
 			if(ret != 0){
 				LOG(ERROR, "No enough memory to add a new code: %s", strerror(errno));
@@ -81,7 +81,7 @@ int comp(const struct gstate *state){
 			
 			/* dictionary is full: clean */
 			if(next_id > dictionary_len){
-				LOG(WARNING, "Dictionary is full. Reconstructing from scratch...");
+				LOG(DEBUG, "Dictionary is full. Reconstructing from scratch...");
 				free_table(h_table);
 				h_table = create_hash_table(dictionary_len/AVG_CODES_PER_ENTRY);
 				if(h_table == NULL){
@@ -104,7 +104,7 @@ int comp(const struct gstate *state){
 	}
 	/* last sequence was found but it was not emitted */
 	if(node != NULL){
-		LOG(DEBUG,"emit code \"last\", char \"%c\": %" PRIu32, node->character, node->child_id);
+		//LOG(DEBUG,"emit code \"last\", char \"%c\": %" PRIu32, node->character, node->child_id);
 		
 		/* emit character */
 		// no need
