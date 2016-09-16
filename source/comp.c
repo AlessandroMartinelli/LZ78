@@ -44,7 +44,7 @@ int comp(const struct gstate *state){
 	LOG(DEBUG, "Check values read:\n\tdictionary_size: %" PRIu32 "\n\tid_size: " 
 		"%" PRIu8 "\n\tsymbol_size: %" PRIu8, dictionary_len, id_size, symbol_size);
 	
-	if(comp_preprocessing(h_table, symbol_size) == -1){
+	if(comp_preprocessing(h_table, symbol_size) != 0){
 		ret = -1;
 		goto end;
 	}
@@ -90,7 +90,7 @@ int comp(const struct gstate *state){
 					ret = -1;
 					goto end;
 				}
-				if(comp_preprocessing(h_table, symbol_size) == 0){
+				if(comp_preprocessing(h_table, symbol_size) != 0){
 					ret = -1;
 					goto end;
 				}
