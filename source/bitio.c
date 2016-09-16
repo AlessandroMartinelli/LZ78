@@ -1,7 +1,7 @@
 /* TODO: If the open return an error, how to set errno? in the paper, we have
  *  ENDFILE, but there is no such macros. There are ENFILE and EMFILE.
  * Alessandro: I propose renaming space --> "avail" and size --> "need"
- * Usually 0 indicates success, while -1 error. 
+ * Usually 0 indicates success, while -1 error.
  */
 
 #include "bitio.h"
@@ -14,7 +14,7 @@ int bitio_flush(struct bitio *b){
 		#if __BYTE_ORDER == __BIG_ENDIAN
 		b->data = htole64(b->data);
 		#endif
-		if((fwrite((void*)&b->data, (b->wp+7)/8, 1, b->f))!=1){ 
+		if((fwrite((void*)&b->data, (b->wp+7)/8, 1, b->f))!=1){
 			errno = ENOSPC;
 			return -1;
 		}
@@ -25,18 +25,18 @@ int bitio_flush(struct bitio *b){
 struct bitio* bitio_open(const char *name, mode_t mode){
 	struct bitio *b;
 	if (name == NULL || name[0] == '\0' || mode > WRITE){
-		errno = EINVAL; 
+		errno = EINVAL;
 		return NULL;
 	}
 	/* calloc: returns a properly aligned object */
-	b = calloc(1, sizeof(struct bitio)); 
+	b = calloc(1, sizeof(struct bitio));
 	if (b == NULL){
 		errno = ENOMEM;
 		return NULL;
 	}
 	
-	/* fopen: if mode == 'w', it opens the file for writing only. 
-	 *  If the file already exists, it is truncated to zero length. 
+	/* fopen: if mode == 'w', it opens the file for writing only.
+	 *  If the file already exists, it is truncated to zero length.
 	 *  Otherwise a new file is created.
 	 *  The stream is positioned at the beginning of the file.
 	 */
@@ -59,11 +59,11 @@ int bitio_close(struct bitio* b){
 	}
 	ret = bitio_flush(b);
 
-	fclose(b->f);	
-	/* bzero: defensive programming: even through we are releasing the resources, 
+	fclose(b->f);
+	/* bzero: defensive programming: even through we are releasing the resources,
 	*  the caller could still try to access them
 	*/
-	bzero(b, sizeof(*b));	
+	bzero(b, sizeof(*b));
 	free(b);
 	return ret;
 }
@@ -72,7 +72,7 @@ int bitio_write(struct bitio *b, uint8_t size, uint64_t data){
 	uint8_t space;
 	if(b == NULL || b->mode !=WRITE || size > 64){
 		errno = EINVAL;
-		return -1; 
+		return -1;
 	}
 	if (size == 0){
 		return 0;
@@ -92,36 +92,36 @@ int bitio_write(struct bitio *b, uint8_t size, uint64_t data){
 		#endif
 		if(fwrite(&(b->data), 8, 1, b->f)!=1){
 			/* It is not possible to recover from a write error, therefore
-			*  the caller must close the program in this case 
+			*  the caller must close the program in this case
 			*/
 			errno = ENOSPC;
 			return -1;
 		}
-		/* copy the remaining part of data in b->data and fill with 0 the first 
+		/* copy the remaining part of data in b->data and fill with 0 the first
 		*  part of b->data; finally, advance wp of the number of bit written
-		*  this second time 
+		*  this second time
 		*/
-		data &= (1UL << size)-1;	
-		b->data = data >> space; 
+		data &= (1UL << size)-1;
+		b->data = data >> space;
 		b->wp = size - space;
 	}
 	return 0; // success!
 }
 
 int bitio_read(struct bitio* b, uint8_t size, uint64_t* data){
-	uint8_t space; 
+	uint8_t space;
 	if(b == NULL || b->mode != READ || size > 64){
 		errno = EINVAL;
 		return -1;
 	}
-	*data = 0;		   
+	*data = 0;
 	space = b->wp - b->rp; /* number of produced bytes still to be consumed */
 	if(size == 0){
 		return 0;
 	}
 	if (size <= space){
 		/* There are enough bits to be consumed.
-		*  We put in data "size" bits taken from [wp, rp], starting from rp 
+		*  We put in data "size" bits taken from [wp, rp], starting from rp
 		*/
 		*data = ((b->data >> b->rp) & ((1UL << size)-1));
 		b->rp+=size;
@@ -143,11 +143,11 @@ int bitio_read(struct bitio* b, uint8_t size, uint64_t* data){
 		}
 		/* fread returns the number of object read, so in order to obtain
 		*  the number of bits we have read, we have to multiply for the object
-		*  size, which is 8 bits. 
+		*  size, which is 8 bits.
 		*/
-		b->wp = ret * 8; 
+		b->wp = ret * 8;
 		if(b->wp >= size-space){
-			/* The number of bits extracted from the file is greater or 
+			/* The number of bits extracted from the file is greater or
 			*  equal to the number of bit missing for satisfying the
 			*  caller request. This means there are enought bits for
 			*  satisfying the caller request.
@@ -157,7 +157,7 @@ int bitio_read(struct bitio* b, uint8_t size, uint64_t* data){
 			b->rp = size-space;
 			return size;
 		} else {
-			/* Even extracting from the file, there were not enough bits for 
+			/* Even extracting from the file, there were not enough bits for
 			*  satisfying the caller request
 			*/
 			*data |= b->data << space;
@@ -175,11 +175,11 @@ FILE* bitio_get_file(struct bitio *b){
 		return NULL;
 	}
 	if(bitio_flush(b)==-1){
-		/* TODO: errno has been setted by bitio_flush. 
+		/* TODO: errno has been setted by bitio_flush.
 		 * Should we set it again or not?
 		 */
 		return NULL;
-	} 
+	}
 	return b->f;
 }
 

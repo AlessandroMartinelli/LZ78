@@ -1,5 +1,5 @@
 /* decomp.c
- * 
+ *
  * Description----------------------------------------------------------
  * Definition of the behaviors of the compressor.
  * Implementation of the methods declared in "outoder_dictionary.h".
@@ -65,7 +65,8 @@ int decomp(const struct gstate *state){
 	
 	code_t *nodes = (code_t*)malloc(dictionary_len*sizeof(code_t));
 	if(nodes == NULL){
-		LOG(ERROR, "Not enough memory to allocate the tree");
+		errno = ENOMEM;
+		LOG(ERROR, "Not enough memory to allocate the tree: %s", strerror(errno));
 		return -1;
 	}
 	decomp_preprocessing(nodes, symbol_size);
@@ -110,37 +111,25 @@ int decomp(const struct gstate *state){
 			}
 		}
 		else{
-			/*LOG(ERROR,"Code unreadable <\"%c\", %llu>",
-				nodes[i%dictionary_len].character,
-				nodes[i%dictionary_len].parent_id);
-			*/
-			LOG(ERROR, "Decode failed: %s", strerror(errno));
+			LOG(ERROR, "Decode failed: no enough bits for a code");
 			return -1;
 		}
 	}
 	free(nodes);
-	
-	/* flush bitio buffer */
-	/*ret = bitio_close(state->b_out);
-	state->b_out = NULL;
-	if (ret < 0){
-			LOG(ERROR, "Close failed: %s", strerror(errno));
-			return -1;
-	}*/
 	
 	return 0;
 }
 
 int decomp_check(const struct gstate *state){
 	int ret;
-	struct stat stat_buf;	
-	unsigned char checksum[MD5_DIGEST_LENGTH];	
+	struct stat stat_buf;
+	unsigned char checksum[MD5_DIGEST_LENGTH];
 	
 	ret = stat(state->output_file, &stat_buf);
 	if (ret == -1){
 		LOG(ERROR, "Impossibile to compute statistics on file %s: %s",
 			state->output_file, strerror(errno));
-		return -1;		
+		return -1;
 	}
 	
 	if((uint64_t)stat_buf.st_size != state->header->original_size){
@@ -156,12 +145,12 @@ int decomp_check(const struct gstate *state){
 		return -1;
 	}
 	LOG_BYTES(DEBUG, state->header->checksum, MD5_DIGEST_LENGTH, "Received checksum: ");
-	LOG_BYTES(DEBUG, checksum, MD5_DIGEST_LENGTH, "Computed checksum: ");			
+	LOG_BYTES(DEBUG, checksum, MD5_DIGEST_LENGTH, "Computed checksum: ");
 	
 	if(memcmp((char*)checksum, (char*)state->header->checksum,MD5_DIGEST_LENGTH) != 0){
 		LOG(ERROR, "Checksum error: received and calculated checksum don't match");
-		return -1;		
-	} 
+		return -1;
+	}
 	LOG(INFO, "Checksum match: OK!");
 
 	return 0;
@@ -174,7 +163,7 @@ int fake_decomp(const struct gstate *state){
 	char buff[1024];
 	unsigned int ret = 0;
 	while((ret=fread(buff, 1, 1024, f_in))>0){
-		if((fwrite(buff, 1, ret, f_out))!=ret){ 
+		if((fwrite(buff, 1, ret, f_out))!=ret){
 			errno = ENOSPC;
 			LOG(ERROR, "Impossible to write output file: %s", strerror(errno));
 			return -1;

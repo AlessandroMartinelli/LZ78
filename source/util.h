@@ -98,6 +98,7 @@ uint8_t __verbose;
 /* CSUM
  *  Return an MD5-checksum calculated on the file pointed by the given
  *  file pointer.
+ *  On error: errno is set to indicate the error.
  */ 
 void csum(const char *filename, unsigned char* c);
 

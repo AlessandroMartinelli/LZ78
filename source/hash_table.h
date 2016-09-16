@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <openssl/md5.h>	//checksum
 
 typedef struct _list_t_ {
     /*key: <parent node id, character>*/

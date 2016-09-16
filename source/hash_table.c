@@ -32,15 +32,18 @@ hash_table_t *create_hash_table(uint32_t size) {
 
 /* simply way to implement a hash function */
 uint32_t hash(hash_table_t *hashtable, char c, uint32_t id) {
+	MD5_CTX mdContext;
+	unsigned char data[16]; // MD5 digest is on 16 bytes
 	uint32_t hashkey;
-
-	/* we start our hash out concateneting 4 times c */
-	hashkey = c + (c << 8) + (c << 16) + (c << 24);
-
-	/* Do the XOR bit-by-bit between hashkey and id */
-	hashkey ^= id;
-
-	/* we then return the hash value mod the hashtable size so that it will
+	
+	MD5_Init(&mdContext);
+	MD5_Update(&mdContext, &c, sizeof(char));
+	MD5_Update(&mdContext, &id, sizeof(uint32_t));
+	MD5_Final(data, &mdContext);
+	
+	hashkey = *((uint32_t*) data);
+	
+	/* return the hash value mod the hashtable size so that it will
 	 * fit into the necessary range
 	 */
 	return hashkey % hashtable->size;
@@ -66,13 +69,17 @@ int add_code(hash_table_t *hashtable, char c, uint32_t id, uint32_t new_node) {
 	uint32_t hashkey = hash(hashtable, c, id);
 
 	/* Attempt to allocate memory for list */
-	if ((new_list = malloc(sizeof (list_t))) == NULL) return 1;
+	if ((new_list = malloc(sizeof (list_t))) == NULL){
+		errno = ENOMEM;
+		return 1;
+	}
 
 	/* Does item already exist? */
 	current_list = lookup_code(hashtable, c, id);
 	/* item already exists, don't insert it again. */
 	if (current_list != NULL){
 		free(new_list);
+		errno = EINVAL;
 		return -1;
 	}
 	

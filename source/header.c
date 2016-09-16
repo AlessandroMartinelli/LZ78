@@ -72,7 +72,7 @@ int header_read(struct header_t *h, FILE *f){
 		return -1;
 	}
 	
-	h->filename = calloc(filename_len + 1, sizeof(char));
+	h->filename = malloc(filename_len + 1);
 	if (h->filename == NULL){
 		errno = ENOMEM;
 		return -1;
@@ -87,7 +87,7 @@ int header_read(struct header_t *h, FILE *f){
 	h->original_size = le64toh(h->original_size);
 #endif
 	
-	h->checksum = (unsigned char*)calloc(1, MD5_DIGEST_LENGTH);
+	h->checksum = (unsigned char*)malloc(MD5_DIGEST_LENGTH);
 	if (h->filename == NULL){
 		errno = ENOMEM;		
 		return -1;

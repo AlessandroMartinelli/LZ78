@@ -15,9 +15,9 @@
 #include "comp.h"
 #include "decomp.h"
 
-#define DICTIONARY_DEFAULT_LEN 16777216LL	/* ~ 3 levels */
-#define DICTIONARY_MIN_LEN 1024LL			/* ~ 2 levels */
-#define DICTIONARY_MAX_LEN 4294967296LL	/* ~ 4 levels */
+#define DICTIONARY_DEFAULT_LEN 65536LL		/* ~ 2 levels */
+#define DICTIONARY_MIN_LEN 1024LL
+#define DICTIONARY_MAX_LEN 16777216LL	/* ~ 3 levels */
 #define SYMBOL_SIZE 8
 
 #define DECOMP_F	0x80	/* decompression flag */
@@ -43,7 +43,7 @@ void usage(){
 }
 
 /* PATH_TO_LZ78NAME
- *  Convert a filename, possibly comprehensive of path, 
+ *  Convert a filename, possibly comprehensive of path,
  *  to the base name of the file, with extension changed to .lz78.
  *  As of now, it only works with name of length lesser than 256.
  */
@@ -61,7 +61,7 @@ char* path_to_lz78name(char* path){
 	dot_index = (uint8_t)(dot_ptr - base_name);
 
 	/* Create and return the new string */
-	lz78name = calloc(dot_index + 5 + 1, sizeof(char));
+	lz78name = malloc(dot_index + 5 + 1);
 	if (lz78name == NULL){
 		errno = ENOMEM;
 		return NULL;
@@ -83,7 +83,7 @@ void clean_bitio(struct gstate* state){
 void clean_state(struct gstate* state){
 	if(state){
 		if(state->output_file) {
-			free(state->output_file);	
+			free(state->output_file);
 		}
 		if(state->header){
 			header_free(state->header);
@@ -143,20 +143,20 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	 * was explicitly given by the user, so the clean function is
 	 * more clear.
 	 */
-	if (output_file){ 
-	    state->output_file = calloc(strlen(output_file) + 1, sizeof(char)); 
-	    if (state->output_file == NULL){ 
-			errno = ENOMEM; 
-			LOG(ERROR, "Space allocation failed: %s", strerror(errno));       
-			return -1; 
-	    } 
-	    strcpy(state->output_file, output_file); 
+	if (output_file){
+	    state->output_file = malloc(strlen(output_file) + 1);
+	    if (state->output_file == NULL){
+			errno = ENOMEM;
+			LOG(ERROR, "Space allocation failed: %s", strerror(errno));
+			return -1;
+	    }
+	    strcpy(state->output_file, output_file);
 	} else {
 		state->output_file = path_to_lz78name(state->input_file);
 	}
 
 	/* Allocation of header_t structure */
-	state->header = calloc(1, sizeof(struct header_t));
+	state->header = malloc(sizeof(struct header_t));
 	if (state->header == NULL){
 		errno = ENOMEM;
 		LOG(ERROR, "Impossible to create header_t structure: %s", strerror(errno));
@@ -171,7 +171,7 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	}
 
 	/* Compute checksum of input file and put it in "checksum" */
-	checksum = (unsigned char*)calloc(1, MD5_DIGEST_LENGTH);
+	checksum = (unsigned char*)malloc(MD5_DIGEST_LENGTH);
 	if (checksum == NULL){
 		errno = ENOMEM;
 		LOG(ERROR, "Impossible to allocate the checksum: %s", strerror(errno));
@@ -185,7 +185,7 @@ int comp_init_gstate(struct gstate* state, char* input_file, char* output_file, 
 	
 	/* Copy the base filename (i.e. leaving out the path) into the heap */
 	name_len = strlen(basename(state->input_file));
-	bname = calloc(name_len+1, sizeof(char));
+	bname = malloc(name_len+1);
 	strncpy(bname, basename(state->input_file), name_len);
 
 	/* Filling of header_t structure */
@@ -239,7 +239,7 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 	FILE* input_file_ptr = NULL;
 
 	/* Allocation of header_t structure */
-	state->header = calloc(1, sizeof(struct header_t));
+	state->header = malloc(sizeof(struct header_t));
 	if (state->header == NULL){
 		errno = ENOMEM;
 		LOG(ERROR, "Impossible to create header_t structure: %s", strerror(errno));
@@ -287,21 +287,21 @@ int decomp_init_gstate(struct gstate* state, char* input_file, char* output_file
 	/* If the caller has not explicitly given a name for the output file,
 	*  we grab it from the header we've just read
 	*/
-	if (output_file){ 
-	    state->output_file = calloc(strlen(output_file) + 1, sizeof(char)); 
-	    if (state->output_file == NULL){ 
-			errno = ENOMEM; 
-			LOG(ERROR, "Space allocation failed: %s", strerror(errno));       
-			return -1; 
-	    } 
-	    strcpy(state->output_file, output_file); 
+	if (output_file){
+	    state->output_file = malloc(strlen(output_file) + 1);
+	    if (state->output_file == NULL){
+			errno = ENOMEM;
+			LOG(ERROR, "Space allocation failed: %s", strerror(errno));
+			return -1;
+	    }
+	    strcpy(state->output_file, output_file);
 	} else {
-	    state->output_file = calloc(strlen(state->header->filename) + 1, sizeof(char)); 
-	    if (state->output_file == NULL){ 
-			errno = ENOMEM; 
-			LOG(ERROR, "Space allocation failed: %s", strerror(errno));       
-			return -1; 
-	    } 	
+	    state->output_file = malloc(strlen(state->header->filename) + 1);
+	    if (state->output_file == NULL){
+			errno = ENOMEM;
+			LOG(ERROR, "Space allocation failed: %s", strerror(errno));
+			return -1;
+	    }
 		strcpy(state->output_file, state->header->filename);
 	}
 
