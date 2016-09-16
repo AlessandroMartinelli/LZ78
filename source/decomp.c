@@ -19,12 +19,12 @@ int decode(code_t *array, code_t *node, struct bitio* b, uint8_t symbol_size, in
 	else{
 		if(i > 1<<symbol_size){ // first code doesn't set any node.character
 			array[i-1].character = node->character;
-			LOG(DEBUG, "Previous char(%d): %c", i-1, node->character);
+			//LOG(DEBUG, "Previous char(%d): %c", i-1, node->character);
 		}
 	}
 	
 	/* emit character */
-	LOG(DEBUG,"Decoding node %d (parent_id %" PRIu32 ", char %c)", i, node->parent_id, node->character);
+	//LOG(DEBUG,"Decoding node %d (parent_id %" PRIu32 ", char %c)", i, node->parent_id, node->character);
 	ret = bitio_write(b, symbol_size, node->character);
 	if (ret < 0){
 		return -1;
